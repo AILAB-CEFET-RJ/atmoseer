@@ -2,8 +2,12 @@
 data/
 models/
 backup/
- __pycache__/
- *.pyc
+__pycache__/
+*.pyc
+
+src/spatiotemporal_builder/features
+src/spatiotemporal_builder/target
+src/spatiotemporal_builder/websirenes_keys
 
 src/__pycache__/globals.cpython-38.pyc
 src/__pycache__/globals.cpython-310.pyc
