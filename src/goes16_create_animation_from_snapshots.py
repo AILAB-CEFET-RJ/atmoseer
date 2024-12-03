@@ -74,18 +74,18 @@ def create_snapshots(netcdf_file, output_directory, title_prefix = ""):
             # Iterate through all variables in the dataset
             for variable_name in dataset.variables.keys():
                 # Retrieve the data array for the variable
-                data_array = dataset.variables[variable_name][:]
+                data = dataset.variables[variable_name][:]
 
                 # Compute the global min and max values for scaling
-                global_min = min(global_min, data_array.min())
-                global_max = max(global_max, data_array.max())
+                global_min = min(global_min, data.min())
+                global_max = max(global_max, data.max())
 
                 # Generate a sanitized output file name
                 sanitized_name = variable_name.replace(":", "_").replace(" ", "_")
                 output_image_file = os.path.join(output_directory, f"{sanitized_name}.png")
                 
                 # Plot the data array and save it
-                create_snapshot(data_array, f'{title_prefix} {variable_name}', output_image_file)
+                create_snapshot(data, f'{title_prefix} {variable_name}', output_image_file)
                 print(f"Saved snapshot for {variable_name} to {output_image_file}")
     
             print(f"Global scale: min={global_min}, max={global_max}")

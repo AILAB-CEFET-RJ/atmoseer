@@ -279,11 +279,11 @@ if __name__ == "__main__":
                          './data/goes16/CMI/C15', 
                          './CMI_features/glaciacao_topo_nuvem')
 
-    '''
+    ''' Feature dF_dt
     1- caminho da pasta do canal 13
     2- caminho da pasta de saída da feature
     '''
-    derivada_temporal_fluxo_ascendente('./data/goes16/CMI/C13', './CMI_features/fluxo_ascendente')
+    derivada_temporal_fluxo_ascendente('./data/goes16/CMI/C13', './features/CMI/dF_dt')
 
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
