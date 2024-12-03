@@ -17,14 +17,16 @@ class WebSireneCoordsSchemaLatLongStr(WebSireneCoordsSchema):
     longitude: str
 
 
-websirenes_coords_path = Path(__file__).parent / "websirenes_coords.parquet"
+def get_websirenes_coords() -> pd.DataFrame:
+    websirenes_coords_path = Path(__file__).parent / "websirenes_coords.parquet"
 
-websirenes_coords = pd.read_parquet(websirenes_coords_path)
-WebSireneCoordsSchema.validate(websirenes_coords)
+    websirenes_coords = pd.read_parquet(websirenes_coords_path)
+    WebSireneCoordsSchema.validate(websirenes_coords)
 
-# store lat_long.parquet keys as string to avoid precision issues
-websirenes_coords["latitude"] = websirenes_coords["latitude"].apply(lambda x: str(x))
-websirenes_coords["longitude"] = websirenes_coords["longitude"].apply(lambda x: str(x))
-websirenes_coords["estacao"] = websirenes_coords["estacao"].str.strip()
+    websirenes_coords["latitude"] = websirenes_coords["latitude"].apply(lambda x: str(x))
+    websirenes_coords["longitude"] = websirenes_coords["longitude"].apply(lambda x: str(x))
+    websirenes_coords["estacao"] = websirenes_coords["estacao"].str.strip()
 
-WebSireneCoordsSchemaLatLongStr.validate(websirenes_coords)
+    WebSireneCoordsSchemaLatLongStr.validate(websirenes_coords)
+
+    return websirenes_coords

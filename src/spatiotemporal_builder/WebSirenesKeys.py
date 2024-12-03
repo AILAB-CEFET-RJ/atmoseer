@@ -1,19 +1,26 @@
+import json
 from pathlib import Path
 from typing import TypedDict
 
 import pandas as pd
+from pandera.typing import Index
 from tqdm import tqdm
 
 from .Logger import logger
-from .WebSirenesCoords import websirenes_coords
-from .WebSirenesParser import WebSirenesParser, websirenes_parser
+from .WebSirenesParser import WebSireneSchema, WebSirenesParser
 
 log = logger.get_logger(__name__)
 
 
 class StationNameId(TypedDict):
     name: str
-    station_id: int
+    station_id: str
+
+
+class WebsirenesKeySchema(WebSireneSchema):
+    horaLeitura: Index[pd.Timestamp]
+    latitude: str
+    longitude: str
 
 
 class WebSirenesKeys:
@@ -62,14 +69,6 @@ class WebSirenesKeys:
     def load_key(self, key: str) -> pd.DataFrame:
         return pd.read_parquet(f"{self.websirenes_keys_path}/{key}.parquet")
 
-    def _set_minimum_date(self, df: pd.DataFrame):
-        if df.index.min() < self.websirenes_parser.minimum_date:
-            self.websirenes_parser.minimum_date = df.index.min()
-
-    def _set_maximum_date(self, df: pd.DataFrame):
-        if df.index.max() > self.websirenes_parser.maximum_date:
-            self.websirenes_parser.maximum_date = df.index.max()
-
     def build_keys(self, use_cache: bool = True):
         """
         Builds datasets by key (latitude and longitude) for each station
@@ -99,7 +98,10 @@ class WebSirenesKeys:
 
         files = self.websirenes_parser.list_files()
         not_found_in_coords = self._not_founds_in_coords()
-        log.info(f"Processing {len(files)} files to build keys")
+        log.info(f"Found {len(not_found_in_coords)} stations not found in coordinates")
+        log.info(f"Processing {len(files) - len(not_found_in_coords)} files to build keys")
+        minimum_date = pd.Timestamp.max
+        maximum_date = pd.Timestamp.min
         for file in tqdm(files):
             df = self.websirenes_parser.get_dataframe(
                 str(self.websirenes_parser.websirenes_defesa_civil_path / file)
@@ -108,16 +110,30 @@ class WebSirenesKeys:
             if station_name in [x["name"] for x in not_found_in_coords]:
                 continue
 
-            self._set_minimum_date(df)
-            self._set_maximum_date(df)
+            if df.index.min() < minimum_date:
+                minimum_date = df.index.min()
+            if df.index.max() > maximum_date:
+                maximum_date = df.index.max()
 
             df = self._merge_by_name(self.websirenes_coords, df)
             self._write_key(df)
         log.info(f"""
-            Minimum date: {self.websirenes_parser.minimum_date}
-            Maximum date: {self.websirenes_parser.maximum_date}
+            Minimum date: {minimum_date}
+            Maximum date: {maximum_date}
         """)
         log.success(f"Websirenes keys built successfully in {self.websirenes_keys_path}")
 
+        minimum_maximum_dates_path = (
+            self.websirenes_keys_path / "minimum_maximum_dates_websirenes.json"
+        )
+        with open(minimum_maximum_dates_path, "w") as f:
+            json.dump(
+                {
+                    "minimum_date": minimum_date.isoformat(),
+                    "maximum_date": maximum_date.isoformat(),
+                },
+                f,
+                indent=4,
+            )
 
-websirenes_keys = WebSirenesKeys(websirenes_parser, websirenes_coords)
+        log.success(f"Minimum and maximum dates written to {minimum_maximum_dates_path}")

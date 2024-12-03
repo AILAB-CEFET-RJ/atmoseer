@@ -29,8 +29,6 @@ class WebSirenesParser:
     websirenes_defesa_civil_path = (
         Path(__file__).parent.parent.parent / "data/ws" / "websirenes_defesa_civil"
     )
-    minimum_date = pd.Timestamp.max  # initialize as max to find the minimum date later
-    maximum_date = pd.Timestamp.min  # initialize as min to find the maximum date later
 
     def list_files(self) -> list[str]:
         return os.listdir(self.websirenes_defesa_civil_path)
@@ -169,6 +167,3 @@ class WebSirenesParser:
         WebSireneSchema.validate(df)
         df.set_index("horaLeitura", inplace=True)
         return df
-
-
-websirenes_parser = WebSirenesParser()

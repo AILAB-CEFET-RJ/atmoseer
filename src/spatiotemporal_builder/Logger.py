@@ -16,7 +16,6 @@ logging.setLoggerClass(MyLogger)
 
 
 class ColorFormatter(logging.Formatter):
-    white_color = "\033[97m"
     error_color = "\033[91m"
     warning_color = "\033[93m"
     info_color = "\033[96m"
@@ -26,7 +25,7 @@ class ColorFormatter(logging.Formatter):
 
     FORMATS = {
         SUCCESS: f"{success_color}{log_format}{reset_color}",
-        logging.DEBUG: f"{white_color}{log_format}{reset_color}",
+        logging.DEBUG: f"{log_format}",
         logging.INFO: f"{info_color}{log_format}{reset_color}",
         logging.WARNING: f"{warning_color}{log_format}{reset_color}",
         logging.ERROR: f"{error_color}{log_format}{reset_color}",
