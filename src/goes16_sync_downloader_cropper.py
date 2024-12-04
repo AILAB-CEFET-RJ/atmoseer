@@ -8,6 +8,7 @@ from osgeo import osr, gdal
 import argparse
 import logging
 import netCDF4 as nc
+import math
 
 
 # Lock to synchronize access to shared resources
@@ -172,15 +173,19 @@ def crop_full_disk(full_disk_filename, variable_names, extent):
         raw.GetRasterBand(1).WriteArray(ds)
 
         # Define the parameters for the reprojection  
-        warp_options = gdal.WarpOptions(format = 'MEM', 
-                                    srcSRS = source_prj, 
-                                    dstSRS = target_prj,
-                                    outputBounds = (extent[0], extent[3], extent[2], extent[1]), 
-                                    outputBoundsSRS = target_prj, 
-                                    outputType = gdal.GDT_Float32, 
-                                    srcNodata = undef, 
-                                    dstNodata = 'nan', 
-                                    resampleAlg = gdal.GRA_NearestNeighbour)
+        warp_options = gdal.WarpOptions(
+        format='MEM', 
+        srcSRS=source_prj, 
+        dstSRS=target_prj,
+        outputBounds=(extent[0], extent[3], extent[2], extent[1]), 
+        outputBoundsSRS=target_prj, 
+        outputType=gdal.GDT_Float32, 
+        xRes=2 / (111.32 * math.cos(math.radians(-22.7508))),  # Resolução longitudinal em graus para 2 km 
+        yRes=2 / 111.32, # Resolução latitudinal em graus para 2 km 
+        srcNodata=undef, 
+        dstNodata='nan', 
+        resampleAlg=gdal.GRA_NearestNeighbour
+        )
 
         # Apply the transformation and write to the virtual dataset
         mem_dataset = gdal.Warp('', raw, options=warp_options)
