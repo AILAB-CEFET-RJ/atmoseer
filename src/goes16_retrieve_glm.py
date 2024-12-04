@@ -8,6 +8,8 @@ import s3fs
 import argparse
 import sys
 import time
+import numpy.ma as ma
+import netCDF4 as nc
 
 # Define coordinate limits of interest
 lon_min, lon_max = -45.05290312102409, -42.35676996062447
@@ -56,8 +58,44 @@ def filter_by_coordinates(file_path):
         logging.error(f"Error processing file {file_path}: {e}")
         return False
 
+def create_grid_spatial_resolution(lon_min, lon_max, lat_min, lat_max, flash_lat, flash_lon, shape):
+    n_lat, n_lon = shape
+    # Interval size
+    intervalo_lat = (lat_max - lat_min) / n_lat
+    intervalo_lon = (lon_max - lon_min) / n_lon
+    # Initialize grid with zeroes
+    grid = ma.zeros(shape, dtype=int)
+    # Iterating over (lat, lon) list
+    for lat, lon in zip(flash_lat, flash_lon):
+        if not (lat_min <= lat <= lat_max and lon_min <= lon <= lon_max):
+            continue # Skipping (lat, lon) out of the bound
+        # Intervals idx
+        idx_lat = int((lat - lat_min) / intervalo_lat)
+        idx_lon = int((lon - lon_min) / intervalo_lon)
+        # Idx on range
+        idx_lat = max(0, min(idx_lat, n_lat - 1))
+        idx_lon = max(0, min(idx_lon, n_lon - 1))
+        # Adding one to the corresponding pair matched on the grid
+        grid[idx_lat, idx_lon] += 1
 
-def aggregate_daily_files(day_directory, output_file):
+    return grid
+
+def generate_structure(year, month, day):
+    # Define the fixed start of the day.
+    base_date = datetime(year, month, day, 0, 0)  # yyyy-mm-dd hh:mm
+    
+    # Creating an empty dictionary
+    data = {}
+    
+    # Generating 48 timestamps starting from 00:00, with intervals of 30 minutes
+    for i in range(48):
+        timestamp = base_date + timedelta(minutes=30 * i)
+        timestamp_key = timestamp.strftime("%Y_%m_%d_%H_%M")  # Format: yyyy_mm_dd_hh_mm
+        data[timestamp_key] = {'latitude': [], 'longitude': []}
+    
+    return data
+
+def aggregate_daily_files(day_directory, output_file, year, month, day):
     """Aggregate all filtered files from a day into a single NetCDF file."""
     files = [os.path.join(day_directory, f) for f in os.listdir(day_directory) if f.endswith('.nc')]
     if not files:
@@ -65,35 +103,50 @@ def aggregate_daily_files(day_directory, output_file):
         return
 
     logging.info(f"Aggregating {len(files)} files from {day_directory} into {output_file}.")
-    all_longitudes, all_latitudes, all_times = [], [], []
+
+    # Initialization of a structure to store the latitudes and longitudes for the 48 timestamps
+    data = generate_structure(year, month, day)
 
     for file in files:
         try:
             with Dataset(file, 'r') as ds:
                 longitudes = ds.variables['flash_lon'][:]
                 latitudes = ds.variables['flash_lat'][:]
-                times = ds.variables['flash_time_offset_of_first_event'][:]
+                time_coverage_start = ds.getncattr("time_coverage_start")
+                dt = datetime.strptime(time_coverage_start, "%Y-%m-%dT%H:%M:%S.%fZ")
 
-                all_longitudes.append(longitudes)
-                all_latitudes.append(latitudes)
-                all_times.append(times)
+                # Adjusting timestamp with the expected format
+                formatted_time = dt.strftime("%Y_%m_%d_%H_%M")
+
+                # Update lat lon  
+                data[formatted_time]['latitude'].extend(latitudes)
+                data[formatted_time]['longitude'].extend(longitudes)
+                
         except Exception as e:
             logging.error(f"Error reading file {file}: {e}")
 
-    if all_longitudes:
-        with Dataset(output_file, 'w', format='NETCDF4') as ds_out:
-            ds_out.createDimension('event', len(np.concatenate(all_longitudes)))
+    # Create a new netCDF file
+    with nc.Dataset(output_file, 'w', format='NETCDF4') as dataset:
+        # Loop through the dictionary and add data to the netCDF file
+        for key in data:  
+            latitude = data[key]['latitude']
+            longitude = data[key]['longitude']
+            shape = (94, 121)
+            grid = create_grid_spatial_resolution(lon_min, lon_max, lat_min, lat_max, latitude, longitude, shape)
 
-            lon_var = ds_out.createVariable('flash_lon', 'f4', ('event',))
-            lat_var = ds_out.createVariable('flash_lat', 'f4', ('event',))
-            time_var = ds_out.createVariable('flash_time_offset_of_first_event', 'f4', ('event',))
+            # Create dimensions based on the shape of the numpy array
+            for i, dim_size in enumerate(grid.shape):
+                dim_name = f"dim_{i}_{key}"
+                if dim_name not in dataset.dimensions:
+                    dataset.createDimension(dim_name, dim_size)
+            
+            # Create a variable with the timestamp as its name
+            var = dataset.createVariable(key, grid.dtype, tuple(f"dim_{i}_{key}" for i in range(grid.ndim)))
+            
+            # Assign the data from the numpy array to the variable
+            var[:] = grid  
 
-            lon_var[:] = np.concatenate(all_longitudes)
-            lat_var[:] = np.concatenate(all_latitudes)
-            time_var[:] = np.concatenate(all_times)
-
-        logging.info(f"Aggregated file saved to {output_file}.")
-
+    logging.info(f"netCDF file '{output_file}' created successfully.")
 
 def download_files(start_date, end_date, ignored_months):
     """Download and process GLM files for a specified date range, saving daily files in monthly directories."""
@@ -142,7 +195,7 @@ def download_files(start_date, end_date, ignored_months):
 
         # Path for the aggregated file of the day
         aggregated_file = os.path.join(month_dir, f"{day_str}.nc")
-        aggregate_daily_files(temp_directory, aggregated_file)
+        aggregate_daily_files(temp_directory, aggregated_file, year, month, day)
 
         # Clear the temporary folder for the next day
         clear_directory(temp_directory)
