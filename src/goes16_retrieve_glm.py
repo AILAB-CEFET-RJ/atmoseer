@@ -95,6 +95,16 @@ def generate_structure(year, month, day):
     
     return data
 
+def adjust_to_previous_interval(dt, interval_minutes=30):
+
+    # Calculate the number of intervals that have passed since the start of the day
+    total_minutes = dt.hour * 60 + dt.minute
+    previous_interval_minutes = (total_minutes // interval_minutes) * interval_minutes
+    adjusted_time = datetime(dt.year, dt.month, dt.day) + timedelta(minutes=previous_interval_minutes)
+
+    return adjusted_time.strftime("%Y_%m_%d_%H_%M")
+
+
 def aggregate_daily_files(day_directory, output_file, year, month, day):
     """Aggregate all filtered files from a day into a single NetCDF file."""
     files = [os.path.join(day_directory, f) for f in os.listdir(day_directory) if f.endswith('.nc')]
@@ -116,7 +126,7 @@ def aggregate_daily_files(day_directory, output_file, year, month, day):
                 dt = datetime.strptime(time_coverage_start, "%Y-%m-%dT%H:%M:%S.%fZ")
 
                 # Adjusting timestamp with the expected format
-                formatted_time = dt.strftime("%Y_%m_%d_%H_%M")
+                formatted_time = adjust_to_previous_interval(dt, interval_minutes=30)
 
                 # Update lat lon  
                 data[formatted_time]['latitude'].extend(latitudes)
