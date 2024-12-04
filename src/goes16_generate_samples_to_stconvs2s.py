@@ -156,8 +156,8 @@ def main(path, max_gap, bands, output):
         else:
             print(f"Nenhum dataset processado para o dia {day}.")
 
-path = "test_data/2019/*/*.nc"
+path = "./features/CMI/"
 max_gap = 30
-bands = [11, 13, 14, 15]
+features = ['dF_dt']
 output = "output"
-main(path, max_gap, bands, output)
+main(path, max_gap, features, output)

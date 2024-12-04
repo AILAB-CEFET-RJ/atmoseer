@@ -123,3 +123,13 @@ ALERTARIO_WEATHER_STATION_IDS = (
 # UMD_INS,
 # CD_ESTACAO,
 # HR_MEDICAO
+
+lat_max, lon_max = (
+            -21.699774257353113,
+            -42.35676996062447,
+)  # canto superior direito
+lat_min, lon_min = (
+            -23.801876626302175,
+            -45.05290312102409,
+)  # canto inferior esquerdo
+extent = [lon_min, lat_min, lon_max, lat_max]

@@ -9,7 +9,7 @@ import xarray as xr
 from tqdm import tqdm
 
 from .Logger import TqdmLogger, logger
-from .WebsirenesTarget import SpatioTemporalFeatures, websirenes_target
+from .WebsirenesTarget import SpatioTemporalFeatures
 
 log = logger.get_logger(__name__)
 
@@ -21,7 +21,6 @@ class WebsirenesDataset:
 
     def __init__(self, websirenes_target: SpatioTemporalFeatures) -> None:
         self.websirenes_target = websirenes_target
-        self.features_path = Path(__file__).parent / "features"
         self.TIMESTEPS = 5
 
     def _has_timesteps(self, year: int, month: int, day: int, hour: int) -> bool:
@@ -29,7 +28,7 @@ class WebsirenesDataset:
         for timestep in reversed(range(self.TIMESTEPS)):
             current_time = start_time - pd.Timedelta(hours=timestep)
             file = (
-                self.features_path
+                self.websirenes_target.features_path
                 / f"{current_time.year:04}_{current_time.month:02}_{current_time.day:02}_{current_time.hour:02}_features.npy"
             )
             if not Path(file).exists():
@@ -46,7 +45,7 @@ class WebsirenesDataset:
             current_time = start_time - pd.Timedelta(hours=timestep)
             file = f"{current_time.year:04}_{current_time.month:02}_{current_time.day:02}_{current_time.hour:02}_features.npy"
             try:
-                data = np.load(self.features_path / file)
+                data = np.load(self.websirenes_target.features_path / file)
             except Exception as e:
                 print(f"Error loading file {file}: {e}")
                 exit(1)
@@ -127,7 +126,6 @@ class WebsirenesDataset:
 
         data_x_list = []
         data_y_list = []
-        i = 0
         for timestamp in tqdm(timestamps, mininterval=60, file=TqdmLogger(log)):
             if timestamp.month in ignored_months:
                 continue
@@ -135,12 +133,9 @@ class WebsirenesDataset:
             data_x, data_y = self._process_timestamp(timestamp, overlapping)
             if data_x is None and data_y is None:
                 continue
-            i += 1
             data_x_list.append(data_x)
             data_y_list.append(data_y)
             # high space complexity, may need to investigate another approach
-
-        print(f"i: {i}")
 
         assert len(data_x_list) == len(data_y_list), "Mismatch between data_x and data_y lists"
 
@@ -170,14 +165,11 @@ class WebsirenesDataset:
             coords={
                 "sample": sample,
                 "timestep": timestep,
-                "lat": websirenes_target.sorted_latitudes_ascending[::-1],
-                "lon": websirenes_target.sorted_longitudes_ascending,
+                "lat": self.websirenes_target.sorted_latitudes_ascending[::-1],
+                "lon": self.websirenes_target.sorted_longitudes_ascending,
                 "channel": channel,
             },
         )
 
         ds.to_netcdf(self.dataset_path)
         log.success(f"Dataset saved to {self.dataset_path}")
-
-
-websirenes_dataset = WebsirenesDataset(websirenes_target)
