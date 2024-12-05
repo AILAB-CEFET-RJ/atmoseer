@@ -1,15 +1,16 @@
-import os
-import shutil
+from concurrent.futures import ThreadPoolExecutor
 import logging
+import os
+import time
 from datetime import datetime, timedelta
 from netCDF4 import Dataset
-import numpy as np
 import s3fs
-import argparse
-import sys
-import time
-import numpy.ma as ma
+import shutil
+import numpy as np
 import netCDF4 as nc
+import numpy.ma as ma
+import sys
+import argparse
 
 # Define coordinate limits of interest
 lon_min, lon_max = -45.05290312102409, -42.35676996062447
@@ -20,43 +21,15 @@ output_directory = "data/goes16/GLM/"
 temp_directory = os.path.join(output_directory, "temp")
 final_directory = os.path.join(output_directory, "aggregated_data")
 
-
 def create_directory(directory):
-    """Create a directory if it does not exist."""
     os.makedirs(directory, exist_ok=True)
     logging.info(f"Directory {directory} created (or already exists).")
 
-
 def clear_directory(directory):
-    """Clear the contents of a directory and recreate it."""
     if os.path.exists(directory):
         shutil.rmtree(directory)
         logging.info(f"Directory {directory} cleared.")
     create_directory(directory)
-
-
-def filter_by_coordinates(file_path):
-    """Filter GLM events in a NetCDF file based on given coordinates."""
-    try:
-        dataset = Dataset(file_path, 'r')
-        longitudes = dataset.variables['flash_lon'][:]
-        latitudes = dataset.variables['flash_lat'][:]
-
-        mask = (
-            (longitudes >= lon_min) & (longitudes <= lon_max) &
-            (latitudes >= lat_min) & (latitudes <= lat_max)
-        )
-        dataset.close()
-
-        if np.sum(mask) == 0:
-            logging.warning(f"No events found in {file_path} for the specified region. Deleting file.")
-            os.remove(file_path)
-            return False
-        logging.info(f"Events found in {file_path}.")
-        return True
-    except Exception as e:
-        logging.error(f"Error processing file {file_path}: {e}")
-        return False
 
 def create_grid_spatial_resolution(lon_min, lon_max, lat_min, lat_max, flash_lat, flash_lon, shape):
     n_lat, n_lon = shape
@@ -104,6 +77,33 @@ def adjust_to_previous_interval(dt, interval_minutes=30):
 
     return adjusted_time.strftime("%Y_%m_%d_%H_%M")
 
+# Função para download
+def download_and_process_file(file, fs, temp_directory):
+    local_file_path = os.path.join(temp_directory, os.path.basename(file))
+    logging.info(f"Downloading {file} to {local_file_path}")
+    fs.get(file, local_file_path)
+    logging.info(f"Downloaded: {file}")
+    return local_file_path
+
+# Processamento paralelo com threading
+def process_hourly_files(fs, hour_path, temp_directory):
+    try:
+        hourly_files = fs.ls(hour_path)
+    except FileNotFoundError:
+        logging.warning(f"Hour path {hour_path} not found.")
+        return
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [
+            executor.submit(download_and_process_file, file, fs, temp_directory)
+            for file in hourly_files
+        ]
+        for future in futures:
+            try:
+                file_path = future.result()
+                logging.info(f"Processing completed for {file_path}")
+            except Exception as e:
+                logging.error(f"Error processing file: {e}")
 
 def aggregate_daily_files(day_directory, output_file, year, month, day):
     """Aggregate all filtered files from a day into a single NetCDF file."""
@@ -163,13 +163,12 @@ def download_files(start_date, end_date, ignored_months):
     current_date = start_date
     fs = s3fs.S3FileSystem(anon=True)
 
-    clear_directory(temp_directory)  # Ensure temp_directory is empty
+    clear_directory(temp_directory) # Ensure temp_directory is empty
     create_directory(final_directory)
 
     while current_date <= end_date:
         if current_date.month in ignored_months:
-            day = current_date.strftime('%Y_%m_%d')
-            logging.info(f"Ignoring data for {day}.")
+            logging.info(f"Ignoring data for {current_date.strftime('%Y-%m-%d')}.")
             current_date += timedelta(days=1)
             continue
 
@@ -188,30 +187,18 @@ def download_files(start_date, end_date, ignored_months):
         day_of_year = current_date.timetuple().tm_yday
         bucket_path = f'noaa-goes16/GLM-L2-LCFA/{year}/{day_of_year:03d}/'
 
-        for hour in range(24):
-            hour_path = bucket_path + f"{hour:02d}/"
-            try:
-                hourly_files = fs.ls(hour_path)
-            except FileNotFoundError:
-                logging.warning(f"Hour {hour:02d} not found in the bucket. Skipping...")
-                continue
-
-            for file in hourly_files:
-                file_name = file.split('/')[-1]
-                local_file_path = os.path.join(temp_directory, file_name)
-                logging.info(f"Downloading: {file} to {local_file_path}")
-                fs.get(file, local_file_path)
-                filter_by_coordinates(local_file_path)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            for hour in range(24):
+                hour_path = bucket_path + f"{hour:02d}/"
+                executor.submit(process_hourly_files,fs, hour_path, temp_directory)
 
         # Path for the aggregated file of the day
         aggregated_file = os.path.join(month_dir, f"{day_str}.nc")
         aggregate_daily_files(temp_directory, aggregated_file, year, month, day)
 
-        # Clear the temporary folder for the next day
+        # Limpeza de diretório temporário
         clear_directory(temp_directory)
-
         current_date += timedelta(days=1)
-
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Download and filter GLM files by coordinates.')
