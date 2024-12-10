@@ -61,3 +61,8 @@ src/spatiotemporal_builder/features/2018_01_01_09_features.npy
 src/spatiotemporal_builder/features/2018_01_01_10_features.npy
 anim/dF_dt_2024_01_13/animation.mp4
 websirenes_spatiotemporal_log.log
+notebooks/GPM/imerg_animation_2024_01_01.mp4
+gpm_update_log.txt
+nohup_gpm2021.log
+gpm_update_log.txt
+gpm_update_log.txt
