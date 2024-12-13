@@ -234,7 +234,7 @@ def derivada_temporal_fluxo_ascendente(pasta_entrada_canal, pasta_saida, interva
                         if variavel_adiante in canal.variables.keys():
                             # Calcular derivada temporal
                             delta_t = timedelta(minutes = intervalo_temporal).total_seconds() / 60
-                            print(f'delta_t: {delta_t}')
+                            # print(f'delta_t: {delta_t}')
                             derivada_temporal = (canal.variables[variavel_adiante][:] - canal.variables[nome_variavel][:]) / delta_t
 
                             # Salvar no arquivo de saída
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     '''
     profundidade_nuvens('./data/goes16/CMI/C09', 
                         './data/goes16/CMI/C13', 
-                        './CMI_features/profundidade_nuvens') 
+                        './features/CMI/profundidade_nuvens') 
 
     '''
     1- caminho da pasta do canal 11
@@ -277,13 +277,14 @@ if __name__ == "__main__":
     glaciacao_topo_nuvem('./data/goes16/CMI/C11', 
                          './data/goes16/CMI/C14', 
                          './data/goes16/CMI/C15', 
-                         './CMI_features/glaciacao_topo_nuvem')
+                         './features/CMI/glaciacao_topo_nuvem')
 
     ''' Feature dF_dt
     1- caminho da pasta do canal 13
     2- caminho da pasta de saída da feature
     '''
-    derivada_temporal_fluxo_ascendente('./data/goes16/CMI/C13', './features/CMI/dF_dt')
+    derivada_temporal_fluxo_ascendente('./data/goes16/CMI/C13', 
+                                       './features/CMI/dF_dt')
 
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
