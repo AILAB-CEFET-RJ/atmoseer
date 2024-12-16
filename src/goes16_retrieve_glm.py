@@ -12,9 +12,10 @@ import numpy.ma as ma
 import sys
 import argparse
 
+
 # Define coordinate limits of interest
-lon_min, lon_max = -45.05290312102409, -42.35676996062447
 lat_min, lat_max = -23.801876626302175, -21.699774257353113
+lon_min, lon_max = -45.05290312102409, -42.35676996062447
 
 # Directories
 output_directory = "data/goes16/GLM/"

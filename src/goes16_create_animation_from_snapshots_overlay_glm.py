@@ -66,6 +66,7 @@ def create_snapshots(netcdf_file, glm_netcdf_file, output_directory, title_prefi
     """
     try:
         # Open the netCDF file
+        print(f'Opening file {netcdf_file}')
         with nc.Dataset(netcdf_file, 'r') as dataset, nc.Dataset(glm_netcdf_file, 'r') as glm_dataset:
             # print(f"Variables in the netCDF file: {list(dataset.variables.keys())}")
             
@@ -91,6 +92,7 @@ def create_snapshots(netcdf_file, glm_netcdf_file, output_directory, title_prefi
                 output_image_file = os.path.join(output_directory, f"{sanitized_name}.png")
                 
                 # Plot the data array and save it
+                print(f'data.shape for variable {variable_name}: {data.shape}')
                 create_snapshot_with_overlay(data, overlay_data, f'{title_prefix} {variable_name}', output_image_file)
                 print(f"Saved snapshot for {variable_name} to {output_image_file}")
     
@@ -156,7 +158,7 @@ def create_snapshot_with_overlay(data, overlay_data, title, output_image_file):
     """
 
     if data.shape != overlay_data.shape:
-        raise ValueError("The overlay_data must have the same shape as the main data array.")
+        raise ValueError(f"The overlay shape {overlay_data.shape} must be the same as the GLM array shape {data.shape}.")
     
     # Define the projection for the plot
     fig, ax = plt.subplots(subplot_kw={'projection': ccrs.Geostationary(central_longitude=-75.0, satellite_height=35786023.0)})
@@ -195,7 +197,9 @@ def create_snapshot_with_overlay(data, overlay_data, title, output_image_file):
 
 if __name__ == "__main__":
     '''
-    python src/goes16_create_animation_from_snapshots.py --netcdf_file ./data/goes16/CMI/C07/2023/C07_2023_10_31.nc --output_dir ./C07_2023_10_31 --title_prefix Channel 07
+    python src/goes16_create_animation_from_snapshots_overlay_glm.py --netcdf_file ./features/CMI/profundidade_nuvens/2020/PN_2020_03_02.nc 
+                                                                    --glm_netcdf_file ./data/goes16/GLM/aggregated_data/2020/03/2020-03-02.nc  
+                                                                    --output_dir ./anim/PN_GLM --title_prefix PN_GLM
     '''
     parser = argparse.ArgumentParser(description="Plot data from a NetCDF file.")
     parser.add_argument(
@@ -232,7 +236,7 @@ if __name__ == "__main__":
     output_file = "animation.mp4"    # Name of the output MP4 file
     fps = 5                                   # Frames per second
 
-    global_min, global_max = create_snapshots(args.netcdf_file,args.glm_netcdf_file, args.output_dir, args.title_prefix)
+    global_min, global_max = create_snapshots(args.netcdf_file, args.glm_netcdf_file, args.output_dir, args.title_prefix)
     if args.min_max is not None:
         global_min, global_max = args.min_max[0], args.min_max[1]
 
