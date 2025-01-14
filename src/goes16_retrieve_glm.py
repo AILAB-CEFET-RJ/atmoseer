@@ -11,10 +11,11 @@ import netCDF4 as nc
 import numpy.ma as ma
 import sys
 import argparse
+import globals
 
 # Define coordinate limits of interest
-lon_min, lon_max = -45.05290312102409, -42.35676996062447
-lat_min, lat_max = -23.801876626302175, -21.699774257353113
+lon_min, lon_max = globals.lon_min, globals.lon_max
+lat_min, lat_max = globals.lat_min, globals.lat_max
 
 # Directories
 output_directory = "data/goes16/GLM/"
@@ -31,8 +32,12 @@ def clear_directory(directory):
         logging.info(f"Directory {directory} cleared.")
     create_directory(directory)
 
-def create_grid_spatial_resolution(lon_min, lon_max, lat_min, lat_max, flash_lat, flash_lon, shape):
-    n_lat, n_lon = shape
+def create_grid_spatial_resolution(lon_min, lon_max, lat_min, lat_max, flash_lat, flash_lon, spatial_resolution):
+    n_lat = round((lat_max - lat_min) / spatial_resolution)
+    n_lon = round((lon_max - lon_min) / spatial_resolution)
+
+    shape = (n_lat, n_lon)
+
     # Interval size
     intervalo_lat = (lat_max - lat_min) / n_lat
     intervalo_lon = (lon_max - lon_min) / n_lon
@@ -105,7 +110,7 @@ def process_hourly_files(fs, hour_path, temp_directory):
             except Exception as e:
                 logging.error(f"Error processing file: {e}")
 
-def aggregate_daily_files(day_directory, output_file, year, month, day):
+def aggregate_daily_files(day_directory, output_file, year, month, day, spatial_resolution):
     """Aggregate all filtered files from a day into a single NetCDF file."""
     files = [os.path.join(day_directory, f) for f in os.listdir(day_directory) if f.endswith('.nc')]
     if not files:
@@ -142,7 +147,7 @@ def aggregate_daily_files(day_directory, output_file, year, month, day):
             latitude = data[key]['latitude']
             longitude = data[key]['longitude']
             shape = (94, 121)
-            grid = create_grid_spatial_resolution(lon_min, lon_max, lat_min, lat_max, latitude, longitude, shape)
+            grid = create_grid_spatial_resolution(lon_min, lon_max, lat_min, lat_max, latitude, longitude, spatial_resolution)
 
             # Create dimensions based on the shape of the numpy array
             for i, dim_size in enumerate(grid.shape):
@@ -158,7 +163,7 @@ def aggregate_daily_files(day_directory, output_file, year, month, day):
 
     logging.info(f"netCDF file '{output_file}' created successfully.")
 
-def download_files(start_date, end_date, ignored_months):
+def download_files(start_date, end_date, ignored_months, spatial_resolution):
     """Download and process GLM files for a specified date range, saving daily files in monthly directories."""
     current_date = start_date
     fs = s3fs.S3FileSystem(anon=True)
@@ -194,22 +199,29 @@ def download_files(start_date, end_date, ignored_months):
 
         # Path for the aggregated file of the day
         aggregated_file = os.path.join(month_dir, f"{day_str}.nc")
-        aggregate_daily_files(temp_directory, aggregated_file, year, month, day)
+        aggregate_daily_files(temp_directory, aggregated_file, year, month, day, spatial_resolution)
 
         # Limpeza de diretório temporário
         clear_directory(temp_directory)
         current_date += timedelta(days=1)
 
 def main(argv):
+    '''
+    Example usage (download data for one specific day):
+    python src/goes16_retrieve_glm.py --start_date 2019-01-01 --end_date 2019-01-01 --spatial_resolution 0.1 --ignored_months 6 7 8
+    '''
+
     parser = argparse.ArgumentParser(description='Download and filter GLM files by coordinates.')
     parser.add_argument('-b', '--start_date', required=True, help='Start date in YYYY-MM-DD format')
     parser.add_argument('-e', '--end_date', required=True, help='End date in YYYY-MM-DD format')
+    parser.add_argument('-s', '--spatial_resolution', type=float, required=True, help='Spatial resolution in degrees (e.g., 0.1 for 0.1 degrees of latitude/longitude)')
     parser.add_argument('-i', '--ignored_months', nargs='*', type=int, default=[], 
                         help='Months to ignore (e.g., 1 2 12 to ignore January, February, and December)')
     args = parser.parse_args(argv[1:])
 
     start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
     end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+    spatial_resolution = args.spatial_resolution
 
     assert start_date <= end_date, "Start date must be earlier than or equal to end date."
 
@@ -221,7 +233,7 @@ def main(argv):
     logging.info(f"Ignored months: {', '.join(map(str, ignored_months)) if ignored_months else 'None'}")
 
     start_time = time.time()  # Record the start time
-    download_files(start_date, end_date, ignored_months)
+    download_files(start_date, end_date, ignored_months, spatial_resolution)
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
     print(f"Script execution time: {duration:.2f} minutes.")
