@@ -13,6 +13,7 @@ import sys
 import argparse
 import globals
 
+
 # Define coordinate limits of interest
 lon_min, lon_max = globals.lon_min, globals.lon_max
 lat_min, lat_max = globals.lat_min, globals.lat_max
