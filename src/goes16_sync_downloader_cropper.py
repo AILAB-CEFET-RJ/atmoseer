@@ -8,8 +8,7 @@ from osgeo import osr, gdal
 import argparse
 import logging
 import netCDF4 as nc
-import math
-
+import globals
 
 # Lock to synchronize access to shared resources
 download_lock = threading.Lock()
@@ -23,20 +22,21 @@ cropped_dict_lock = threading.Lock()  # Initialize the lock
 ########################################################################
 
 # Full disk download and crop function
-def download_and_crop_full_disk(fs, remote_path: str, local_path: str, variable_names: str):
+def download_and_crop_full_disk(fs, remote_path: str, local_path: str, spatial_resolution: float, variable_names: str):
     try:
         fs.get(remote_path, local_path)
         # print(f"Processing {remote_path}")
         lat_max, lon_max = (
-            -21.699774257353113,
-            -42.35676996062447,
+            globals.lat_max,
+            globals.lon_max,
         )  # canto superior direito
         lat_min, lon_min = (
-            -23.801876626302175,
-            -45.05290312102409,
+            globals.lat_min,
+            globals.lon_min,
         )  # canto inferior esquerdo
         extent = [lon_min, lat_min, lon_max, lat_max]
         cropped_content = crop_full_disk(full_disk_filename = local_path,
+                                        spatial_resolution = spatial_resolution,
                                          variable_names = variable_names,
                                          extent = extent)
 
@@ -54,7 +54,7 @@ def get_julian_day(date):
     return date.strftime('%j')
 
 # Function to download files from GOES-16 for a specific hour
-def process_goes16_data_for_hour(fs, s3_path, channel, download_dir, variable_names):
+def process_goes16_data_for_hour(fs, s3_path, channel, download_dir, spatial_resolution, variable_names):
     # List all files in the given hour directory
     try:
         files = fs.ls(s3_path)
@@ -73,10 +73,10 @@ def process_goes16_data_for_hour(fs, s3_path, channel, download_dir, variable_na
             file_name = os.path.basename(remote_path)
             local_path = os.path.join(download_dir, file_name)
             if not os.path.exists(local_path):
-                executor.submit(download_and_crop_full_disk, fs, remote_path, local_path, variable_names)
+                executor.submit(download_and_crop_full_disk, fs, remote_path, local_path, spatial_resolution, variable_names)
 
 # Function to download all files for a given day
-def process_goes16_data_for_day(date, channel, download_dir, variable_names):
+def process_goes16_data_for_day(date, channel, download_dir, spatial_resolution, variable_names):
     # Set up S3 access
     fs = s3fs.S3FileSystem(anon=True)
     bucket = 'noaa-goes16'
@@ -93,10 +93,10 @@ def process_goes16_data_for_day(date, channel, download_dir, variable_names):
                 hour_str = f'{hour:02d}'
                 s3_path = f'{bucket}/{product}/{year}/{julian_day}/{hour_str}/'
                 # Submit each hour's download process to the thread pool
-                executor.submit(process_goes16_data_for_hour, fs, s3_path, channel, download_dir, variable_names)
+                executor.submit(process_goes16_data_for_hour, fs, s3_path, channel, download_dir, spatial_resolution, variable_names)
 
 # Main function to process files for a range of dates
-def process_goes16_data_for_period(start_date, end_date, ignored_months, channel, download_dir, crop_dir, variable_names):
+def process_goes16_data_for_period(start_date, end_date, ignored_months, channel, download_dir, crop_dir, spatial_resolution, variable_names):
     current_date = start_date
     while current_date <= end_date:
         day = current_date.strftime('%Y_%m_%d')
@@ -106,7 +106,7 @@ def process_goes16_data_for_period(start_date, end_date, ignored_months, channel
                 continue
 
         print(f"Processing data for {day}")
-        process_goes16_data_for_day(current_date, channel, download_dir, variable_names)
+        process_goes16_data_for_day(current_date, channel, download_dir, spatial_resolution, variable_names)
 
         netcdf_filename = f'{crop_dir}/C{channel:02d}_{day}.nc'
         global cropped_dict
@@ -128,7 +128,7 @@ def extract_middle_part(file_path):
     
     return middle_part
 
-def crop_full_disk(full_disk_filename, variable_names, extent):
+def crop_full_disk(full_disk_filename, spatial_resolution, variable_names, extent):
     # Explicitly choose to use exceptions
     # gdal.UseExceptions()
 
@@ -180,11 +180,11 @@ def crop_full_disk(full_disk_filename, variable_names, extent):
         outputBounds=(extent[0], extent[3], extent[2], extent[1]), 
         outputBoundsSRS=target_prj, 
         outputType=gdal.GDT_Float32, 
-        xRes=2 / (111.32 * math.cos(math.radians(-22.7508))),  # Resolução longitudinal em graus para 2 km 
-        yRes=2 / 111.32, # Resolução latitudinal em graus para 2 km 
+        xRes=spatial_resolution,
+        yRes=spatial_resolution,
         srcNodata=undef, 
         dstNodata='nan', 
-        resampleAlg=gdal.GRA_NearestNeighbour
+        resampleAlg=gdal.GRA_Max
         )
 
         # Apply the transformation and write to the virtual dataset
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     '''
     Example usage:
     one-day test
-    python src/goes16_sync_downloader_cropper.py --start_date "2024-02-08" --end_date "2024-02-08" --channel 7 --download_dir "./downloads" --crop_dir "./cropped" --vars "CMI"
+    python src/goes16_sync_downloader_cropper.py --start_date "2024-02-08" --end_date "2024-02-08" --channel 7 --download_dir "./downloads" --crop_dir "./cropped" --spatial_resolution 0.1 --vars "CMI"
     '''
 
     # Create an argument parser to accept start and end dates, and channel number from the command line
@@ -261,6 +261,7 @@ if __name__ == "__main__":
     parser.add_argument('--channel', type=int, required=True, help="GOES-16 channel number (1-16)")
     parser.add_argument('--download_dir', type=str, default='./downloads', help="Directory to (temporarily) save downloaded FD files")
     parser.add_argument('--crop_dir', type=str, required=True, help="Directory to save cropped files")
+    parser.add_argument('--spatial_resolution', type=float, required=True, help='Spatial resolution in degrees (e.g., 0.1 for 0.1 degrees of latitude/longitude)')
     parser.add_argument("--ignored_months", nargs='+', type=int, required=False, default=[6, 7, 8],
                         help="Months to ignore (e.g., --ignored_months 6 7 8)")
     parser.add_argument("--vars", nargs='+', type=str, required=True, help="At least one variable name (CMI, ...)")
@@ -276,6 +277,7 @@ if __name__ == "__main__":
     channel = args.channel
     download_dir = args.download_dir
     crop_dir = args.crop_dir
+    spatial_resolution = args.spatial_resolution
     ignored_months = args.ignored_months
     variable_names = args.vars
 
@@ -289,6 +291,7 @@ if __name__ == "__main__":
                                    channel = channel, 
                                    download_dir = download_dir, 
                                    crop_dir = crop_dir,
+                                   spatial_resolution = spatial_resolution,
                                    variable_names = variable_names)
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
