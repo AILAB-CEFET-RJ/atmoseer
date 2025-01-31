@@ -1,163 +1,204 @@
 import argparse
-from datetime import datetime
-import glob
-import numpy as np
-import xarray as xr
+from glob import glob
+import os
 import re
+import numpy as np
+import pandas as pd
+import xarray as xr
 
-def process_single_day(files):
-    """
-    Processa os arquivos de um único dia e retorna um dataset combinado.
-    """
-    daily_datasets = []
 
+def process_feature(feature_name, file_pattern):
+    global combined_ds
+    timestamps = []
+    data_list = []
+
+    # Find all files for the current feature
+    files = sorted(glob(file_pattern))
     for file_path in files:
         ds = xr.open_dataset(file_path)
 
-        time_stamps = []
-        data_arrays = []
-
         for var_name in ds.variables:
-            match = re.search(r'CMI_(\d{4}_\d{2}_\d{2}_\d{2}_\d{2})', var_name)
+            # Match the timestamp pattern
+            match = re.search(r'(?:CMI_)?(\d{4}_\d{2}_\d{2}_\d{2}_\d{2})', var_name)
+
             if match:
+                # Parse timestamp
                 timestamp_str = match.group(1)
                 timestamp = np.datetime64(
                     f"{timestamp_str[:4]}-{timestamp_str[5:7]}-{timestamp_str[8:10]}T{timestamp_str[11:13]}:{timestamp_str[14:]}"
                 )
-                time_stamps.append(timestamp)
 
-                var_data = ds[var_name].rename({
-                    f'dim_0_{var_name}': 'lat',
-                    f'dim_1_{var_name}': 'lon'
-                })
-                data_arrays.append(var_data)
+                minutes = int(timestamp_str[14:])
+                if minutes not in [0, 30]:
+                    continue  # Skip timestamps not on :00 or :30
 
-        time_array = xr.DataArray(
-            np.array(time_stamps, dtype='datetime64[ns]'),
-            dims='time'
+                timestamps.append(timestamp)
+
+                # Extract data and ensure it matches the required shape
+                data = ds[var_name].values  # Shape: (lat, lon)
+                if data.shape != (lat_dim, lon_dim):
+                    raise ValueError(f"Unexpected data shape: {data.shape}")
+
+                # Add data to the list
+                data_list.append(data)
+
+    if data_list:
+        # Stack data along the time dimension
+        feature_data = np.stack(data_list, axis=0)  # Shape: (time, lat, lon)
+
+        # Expand to include the channel dimension
+        feature_data = np.expand_dims(feature_data, axis=-1)  # Shape: (time, lat, lon, 1)
+
+        # Create a dataset for this feature
+        feature_ds = xr.Dataset(
+            {
+                "data": (("time", "lat", "lon", "channel"), feature_data),
+            },
+            coords={
+                "time": timestamps,
+                "lat": np.arange(lat_dim),
+                "lon": np.arange(lon_dim),
+                "channel": [feature_name],
+            },
         )
-        daily_data = xr.concat(data_arrays, dim=time_array)
 
-        daily_data = daily_data.assign_coords(lat=np.arange(daily_data.sizes['lat']),
-                                              lon=np.arange(daily_data.sizes['lon']))
-
-        daily_datasets.append(daily_data)
-
-    # Concatenar todos os datasets do dia ao longo da dimensão 'time'
-    combined_day = xr.concat(daily_datasets, dim='time')
-    combined_day = combined_day.sortby('time')  # Ordenar por timestamps
-
-    return combined_day
+        # Merge this feature's dataset with the combined dataset
+        if combined_ds.dims["time"] == 0:  # If combined_ds is still empty
+            combined_ds = feature_ds
+        else:
+            # Align time and concatenate along the channel dimension
+            combined_ds = xr.concat([combined_ds, feature_ds], dim="channel")
 
 
-def collect_samples(combined_data, TIMESTEP, max_gap):
-    """
-    Coleta os samples de um dataset baseado em janelas de tempo e considera todas as bandas.
+# Function to check for maximum gap within a sample
+def check_max_gap(timestamps):
+    """Check the maximum time difference (gap) in minutes within a sample."""
+    time_deltas = timestamps.diff(dim="time") / np.timedelta64(1, "m")  # Convert to minutes
+    max_gap = time_deltas.max().item() if len(time_deltas) > 0 else 0
+    return max_gap
+
+
+# Function to collect samples
+def collect_samples(dataset, timestep, max_gap):
+    """Collect valid X_samples and Y_samples from the dataset."""
+    X_samples, Y_samples = [], []
+    times = dataset.time  # Keep as xarray.DataArray to use diff()
     
-    Parâmetros:
-        combined_data: xarray.Dataset - Dataset combinado com as dimensões `time` e `channel`.
-        TIMESTEP: int - Número de timestamps por sample.
-        max_gap: int - Máximo intervalo permitido entre timestamps consecutivos (em minutos).
-    
-    Retorna:
-        xarray.Dataset - Dataset contendo os samples X e Y.
-    """
-    total_time = combined_data.sizes['time']
+    # Iterate through the dataset in sliding windows
+    for i in range(len(times) - timestep):
+        
+        time_window_x = times.isel(time=slice(i, i + timestep))
+        time_window_y = times.isel(time=slice(i + 1, i + timestep + 1))
 
-    X_samples = []
-    Y_samples = []
+        # Check for gaps in X_sample's time window
+        if check_max_gap(time_window_x) > max_gap:
+            continue  # Skip samples with large gaps
+        if check_max_gap(time_window_y) > max_gap:
+            continue  # Skip samples with large gaps
+        
+        # Extract X and Y samples
+        X_sample = dataset.isel(time=slice(i, i + timestep)).data
+        Y_sample = dataset.isel(time=slice(i + 1, i + timestep + 1)).data
 
-    for i in range(total_time - TIMESTEP):
-        # Coleta do sample X
-        X_sample = combined_data.isel(time=slice(i, i + TIMESTEP)).assign_coords(
-            time=combined_data.time.isel(time=slice(i, i + TIMESTEP))
-        )
-        max_gap_X = check_max_gap(X_sample)
-
-        # Coleta do sample Y
-        Y_sample = combined_data.isel(time=slice(i + 1, i + 1 + TIMESTEP)).assign_coords(
-            time=combined_data.time.isel(time=slice(i + 1, i + 1 + TIMESTEP))
-        )
-        max_gap_Y = check_max_gap(Y_sample)
-
-        # Verificar gaps
-        if max_gap_X > max_gap:
-            print(f'Timestamp faltando no X_sample: {X_sample.time.values}')
-            continue
-        elif max_gap_Y > max_gap:
-            print(f'Timestamp faltando no Y_sample: {Y_sample.time.values}')
-            continue
-
-        # Adicionar os samples válidos
         X_samples.append(X_sample)
         Y_samples.append(Y_sample)
-
-    # Concatenar os samples ao longo da dimensão 'sample'
-    X_samples = xr.concat(X_samples, dim='sample')
-    Y_samples = xr.concat(Y_samples, dim='sample')
-
-    # Dataset final contendo X e Y
-    combined_samples = xr.Dataset({'x': X_samples, 'y': Y_samples})
-
-    return combined_samples
-
-def check_max_gap(sample):
-    """
-    Calcula a maior diferença entre timestamps consecutivos dentro de um sample.
     
-    Parâmetros:
-        sample: xarray.Dataset - Dataset contendo a dimensão `time`.
+    return X_samples, Y_samples
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Consolidate multiple feature files into a single dataset and then collect samples for STConvS2S")
+    parser.add_argument(
+        "--features-path", type=str, 
+        default="./src/features",
+        help="Path to the directory containing the feature files"
+    )
+
+    parser.add_argument(
+        "--output-path", type=str, default="./src/output_dataset.nc",
+        help="Path to save the consolidated dataset with samples"
+    )
+
+    parser.add_argument(
+        "--lat-dim", type=int, required=True,
+        help="Number of latitude points in the feature files"
+    )
+
+    parser.add_argument(
+        "--lon-dim", type=int, required=True,
+        help="Number of longitude points in the feature files"
+    )
+
+    parser.add_argument(
+        "--max-gap", type=int, default=30,
+        help="Maximum allowed gap (in minutes) between timestamps in a sample"
+    )
+
+    parser.add_argument(
+        "--timestep", type=int, default=5,
+        help="Number of timesteps in each sample"
+    )
+
+    args = parser.parse_args()
+
+    base_path = args.features_path
+    output_path = args.output_path
+    lat_dim = args.lat_dim
+    lon_dim = args.lon_dim
+    max_gap = args.max_gap
+    timestep = args.timestep
+
+    # Creating an empty dataset
+    combined_ds = xr.Dataset(
+        {
+            "data": (("time", "lat", "lon", "channel"), np.empty((0, lat_dim, lon_dim, 0))),
+        },
+        coords={
+            "lat": np.arange(lat_dim),
+            "lon": np.arange(lon_dim),
+            "channel": [],
+        },
+        attrs={
+            "description": "Consolidated NetCDF file with multiple features",
+        },
+    )
+
+    # Process each feature
+    for feature_name in sorted(glob(f"{base_path}/*")):
+        if os.path.isdir(feature_name):
+            feature_name_short = os.path.basename(feature_name)
+            file_pattern = f"{feature_name}/**/*.nc"
+            process_feature(feature_name_short, file_pattern)
+
+    timestep = 5  # Number of timesteps in each sample
     
-    Retorna:
-        int - O maior intervalo de tempo (em minutos) entre timestamps consecutivos.
-    """
-    times = sample.time.values
-    gaps = np.diff(times).astype('timedelta64[m]').astype(int)  # Diferenças em minutos
-    return np.max(gaps) if len(gaps) > 0 else 0
+    # Collect samples
+    X_samples, Y_samples = collect_samples(combined_ds, timestep, max_gap)
 
-def main(path, max_gap, bands, output):
-    TIMESTEP = 5
-    files = glob.glob(path)
-    files.sort()
+    # Convert X_samples and Y_samples to numpy arrays
+    X_array = np.stack(X_samples)
+    Y_array = np.stack(Y_samples)
 
-    # Organizar arquivos por dia
-    days = {}
-    for file in files:
-        day = re.search(r'(\d{4}_\d{2}_\d{2})', file).group(1)
-        if day not in days:
-            days[day] = []
-        days[day].append(file)
+    # Extract coordinates from the dataset (assumindo que as dimensões estão em combined_ds)
+    lat = combined_ds.lat.values
+    lon = combined_ds.lon.values
 
-    # Processar cada dia
-    for day, day_files in days.items():
-        print(f"Processando o dia: {day}")
+    # Cria o xarray.Dataset
+    output_ds = xr.Dataset(
+        {
+            "x": (["sample", "time", "lat", "lon", "channel"], X_array),
+            "y": (["sample", "time", "lat", "lon", "channel"], Y_array),
+        },
+        coords={
+            "lat": lat,
+            "lon": lon,
+        },
+        attrs={
+            "description": "The variables have weather features values and are separable in x and y, "
+                           "which are to be used as input and target of the machine learning algorithms, respectively."
+        },
+    )
 
-        band_datasets = []
-        for band in bands:
-            band_files = [file for file in day_files if f"band{band}" in file]
-            if not band_files:
-                print(f"Sem arquivos encontrados para a banda {band} no dia {day}")
-                continue
-
-            daily_dataset = process_single_day(band_files)
-            band_datasets.append(daily_dataset)
-
-        if band_datasets:
-            combined_day = xr.concat(band_datasets, dim='channel')
-            combined_day = combined_day.assign_coords(channel=('channel', bands))
-
-            # Coletar samples do dia
-            daily_samples = collect_samples(combined_day, TIMESTEP, max_gap)
-
-            # Salvar os samples por dia
-            daily_output_path = f"{output}/{day}_samples.nc"
-            daily_samples.to_netcdf(daily_output_path)
-            print(f"Samples do dia {day} salvos em {daily_output_path}")
-        else:
-            print(f"Nenhum dataset processado para o dia {day}.")
-
-path = "./features/CMI/"
-max_gap = 30
-features = ['dF_dt']
-output = "output"
-main(path, max_gap, features, output)
+    # Saves the dataset into a NetCDF file
+    output_ds.to_netcdf(output_path)
+    print("Dataset salvo em", output_path)
