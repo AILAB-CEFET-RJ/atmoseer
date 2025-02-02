@@ -420,7 +420,30 @@ def open_session(usr, pwd):
     cookies=requests.utils.dict_from_cookiejar(session.cookies)
     return session 
 
+'''
+Before running this script, perform the three steps described below.
 
+1) Create an user account in the Earthdata Portal (https://urs.earthdata.nasa.gov/users/new)
+
+2) Configure your username and password for authentication using a .netrc file
+   > cd ~
+   > touch .netrc
+   > echo "machine urs.earthdata.nasa.gov login uid_goes_here password password_goes_here" > .netrc
+   > chmod 0600 .netrc
+where uid_goes_here is your Earthdata Login username and password_goes_here is your Earthdata Login password. 
+Note that some password characters can cause problems. A backslash or space anywhere in your password will need to be escaped with an additional backslash. 
+Similarly, if you use a '#' as the first character of your password, it will also need to be escaped with a preceding backslash. 
+Depending on your environment, the use of double-quotes " may be turned into "smart-quotes" automatically. We recommend turning this feature off. 
+Some users have found that the double quotes are not supported by their systems. 
+Some users have found that the > is aliased to >> on some machines. 
+This will append the text instead of overwrite the text. 
+We recommend checking your ~/.netrc file to ensure it only has one line.
+
+3) Create a cookie file. 
+This will be used to persist sessions across individual cURL/Wget calls, making it more efficient.
+  > cd ~
+  > touch .urs_cookies
+  '''
 def main():
     # read year as external argument and move to data directory
     args = parse_input()
