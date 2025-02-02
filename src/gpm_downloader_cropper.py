@@ -237,7 +237,7 @@ def download_file(session, url, fname, local_dir, size, data_log):
     # r = session.get(url)
     try:
         # Optionally, set a timeout for the request to prevent hanging.
-        r = session.get(url, timeout=5)
+        r = session.get(url, timeout=100)
         r.raise_for_status()  # Optionally raise HTTPError for bad responses (4xx, 5xx)
     except requests.exceptions.Timeout as e:
         print("The request timed out:", e)
