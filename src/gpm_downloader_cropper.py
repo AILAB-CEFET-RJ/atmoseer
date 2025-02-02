@@ -53,6 +53,7 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 import os
+import sys
 import time, calendar
 import argparse
 import subprocess
@@ -232,10 +233,29 @@ def download_file(session, url, fname, local_dir, size, data_log):
     '''Download file using requests '''
     status = 'fine'
     data_log.debug(url)
-    r = session.get(url)
-    # print(f'Downloading {url}')
-    # print(f'r: {r}')
-    # print(f'r.content: {r.content}')
+
+    # r = session.get(url)
+    try:
+        # Optionally, set a timeout for the request to prevent hanging.
+        r = session.get(url, timeout=5)
+        r.raise_for_status()  # Optionally raise HTTPError for bad responses (4xx, 5xx)
+    except requests.exceptions.Timeout as e:
+        print("The request timed out:", e)
+        # Handle timeout, e.g., retry or log the error
+        sys.exit(1)
+    except requests.exceptions.ConnectionError as e:
+        print("A connection error occurred:", e)
+        # Handle connection error
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print("An HTTP error occurred:", e)
+        # Handle HTTP errors
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        print("An error occurred while making the request:", e)
+        # Handle any other type of request exception
+        sys.exit(1)
+
     with open(fname, 'wb') as f:
         f.write(r.content)
     del r
