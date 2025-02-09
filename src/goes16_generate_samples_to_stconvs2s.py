@@ -216,14 +216,6 @@ if __name__ == "__main__":
     lon_dim = args.lon_dim
     max_gap = args.max_gap
     timestep = args.timestep
-    print("features_path:", features_path)
-    print("target_path:", target_path)
-    print("output_path:", output_path)
-    print("lat_dim:", lat_dim)
-    print("lon_dim:", lon_dim)
-    print("max_gap:", max_gap)
-    print("timestep:", timestep)
-
 
     # ===================
     # Features processing
@@ -246,6 +238,7 @@ if __name__ == "__main__":
 
     # Process each feature
     for feature_name in sorted(glob(f"{features_path}/*")):
+        print('Processing', feature_name)
         if os.path.isdir(feature_name):
             feature_name_short = os.path.basename(feature_name)
             file_pattern = f"{feature_name}/**/*.nc"
@@ -272,13 +265,14 @@ if __name__ == "__main__":
 
     # Process each target
     for target_name in sorted(glob(f"{target_path}/*")):
+        print('Processing', target_name)
         if os.path.isdir(target_name):
             target_name_short = os.path.basename(target_name)
             file_pattern = f"{target_name}/**/*.nc"
             process_target(target_name_short, file_pattern)
 
-
-    # Collect samples
+    # =================
+    print("Collecting samples...")
     X_samples, Y_samples = collect_samples(combined_ds, target_ds, timestep, max_gap)
 
     # Convert X_samples and Y_samples to numpy arrays
