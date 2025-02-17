@@ -1,5 +1,5 @@
 ,DC_NOME,SG_ESTADO,CD_SITUACAO,VL_LATITUDE,VL_LONGITUDE,VL_ALTITUDE,DT_INICIO_OPERACAO,STATION_ID
-23,ANGRA DOS REIS,RJ,Operante,"-22.97555554","-44.30333333",6,24/08/2017,A628
+34,ANGRA DOS REIS,RJ,Operante,"-22.97555554","-44.30333333",6,24/08/2017,A628
 41,ARRAIAL DO CABO,RJ,Operante,"-22.97527777","-42.02138888",5,21/09/2006,A606
 97,CAMBUCI,RJ,Operante,"-21.58749999","-41.95833333",46,19/11/2002,A604
 108,CAMPOS DOS GOYTACAZES,RJ,Operante,"-21.71472222","-41.34388888",17,24/09/2006,A607
@@ -25,11 +25,36 @@
 526,TERESOPOLIS-PARQUE NACIONAL,RJ,Operante,"-22.4486111","-42.98694444",981,31/10/2006,A618
 535,TRES RIOS,RJ,Operante,"-22.09833333","-43.20833333",295,07/06/2016,A625
 550,VALENCA,RJ,Operante,"-22.35805555","-43.69555555",370,26/09/2006,A611
-0,Vidigal,RJ,Operante,-22.9925,-43.2331,,,vidigal
-10,Irajá,RJ,Operante,-22.8269,-43.3369,,,iraja
-15,Jardim Botânico,RJ,Operante,-22.9728,-43.2239,,,jardim_botanico
-18,Barra/Riocentro,RJ,Operante,-22.9772,-43.3916,,,riocentro
-19,Guaratiba,RJ,Operante,-23.0503,-43.5947,,,guaratiba
-21,Santa Cruz,RJ,Operante,-22.9094,-43.6844,,,santa_cruz
-27,Alto da Boa Vista,RJ,Operante,-22.9658,-43.2783,,,alto_da_boa_vista
-31,São Cristóvão,RJ,Operante,-22.8967,-43.2217,,,sao_cristovao
+1,Vidigal,RJ,Operante,-22.9925,-43.2331,,,vidigal
+11,Irajá,RJ,Operante,-22.8269,-43.3369,,,iraja
+16,Jardim Botânico,RJ,Operante,-22.9728,-43.2239,,,jardim_botanico
+19,Barra/Riocentro,RJ,Operante,-22.9772,-43.3916,,,riocentro
+20,Guaratiba,RJ,Operante,-23.0503,-43.5947,,,guaratiba
+22,Santa Cruz,RJ,Operante,-22.9094,-43.6844,,,santa_cruz
+28,Alto da Boa Vista,RJ,Operante,-22.9658,-43.2783,,,alto_da_boa_vista
+32,São Cristóvão,RJ,Operante,-22.8967,-43.2217,,,sao_cristovao
+2,Urca,RJ,Operante,-22.9558,-43.1667,,,urca
+3,Rocinha,RJ,Operante,-22.9858,-43.2450,,,rocinha
+4,Tijuca,RJ,Operante,-22.9319,-43.2217,,,tijuca
+5,Santa Teresa,RJ,Operante,-22.9317,-43.1964,,,santa_teresa
+6,Copacabana,RJ,Operante,-22.9864,-43.1894,,,copacabana
+7,Grajaú,RJ,Operante,-22.9222,-43.2675,,,grajau
+8,Ilha do Governador,RJ,Operante,-22.8181,-43.2103,,,ilha_do_governador
+9,Penha,RJ,Operante,-22.8444,-43.2753,,,penha
+10,Madureira,RJ,Operante,-22.8733,-43.3389,,,madureira
+12,Bangu,RJ,Operante,-22.8803,-43.4658,,,bangu
+13,Piedade,RJ,Operante,-22.8918,-43.3101,,,piedade
+14,Jacarepaguá/Tanque,RJ,Operante,-22.9125,-43.3647,,,tanque
+15,Saúde,RJ,Operante,-22.8961,-43.1879,,,saude
+17,Barra/Barrinha,RJ,Operante,-23.0085,-43.2997,,,barrinha
+18,Jacarepaguá/Cidade de Deus,RJ,Operante,-22.9456,-43.3628,,,cidade_de_deus
+21,Est. Grajaú/Jacarepaguá,RJ,Operante,-22.9256,-43.3158,,,grajau
+23,Grande Méier,RJ,Operante,-22.8906,-43.2781,,,grande_meier
+24,Anchieta,RJ,Operante,-22.8269,-43.4033,,,anchieta
+25,Grota Funda,RJ,Operante,-23.0144,-43.5214,,,grota_funda
+26,Campo Grande,RJ,Operante,-22.9036,-43.5619,,,campo_grande
+27,Sepetiba,RJ,Operante,-22.9689,-43.7117,,,sepetiba
+29,Av. Brasil/Mendanha,RJ,Operante,-22.8569,-43.5411,,,av_brasil_mendanha
+30,Recreio dos Bandeirantes,RJ,Operante,-23.0100,-43.4406,,,recreio
+31,Laranjeiras,RJ,Operante,-22.9406,-43.1875,,,laranjeiras
+33,Tijuca/Muda,RJ,Operante,-22.9328,-43.2433,,,tijuca_muda
