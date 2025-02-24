@@ -69,9 +69,9 @@ def get_radar_data(station_name, met):
             dify = (pos_sumare_img[0]/pos_sumare[0])
             difx = (pos_sumare_img[1]/pos_sumare[1])
 
-            posx = pos_sumare[1] - ((vlon - pos_sumare[1]) * 22)
+            posx = pos_sumare[1] - ((vlon - pos_sumare[1]) * 32.5)
             valorx = posx * difx
-            posy = pos_sumare[0] + ((vlat - pos_sumare[0]) * 22)
+            posy = pos_sumare[0] + ((vlat - pos_sumare[0]) * 19.5)
             valory = posy * dify
             
             rgb_im = img.convert('RGB')
@@ -84,14 +84,14 @@ def get_radar_data(station_name, met):
             if os.path.exists(caminho):
                 img = Image.open(caminho)
                 pos_sumare = (-22.955139,-43.248278)
-                pos_sumare_img = (img.height/2, img.width/2)
+                pos_sumare_img = (img.height/2, img.width/2 -1)
 
                 dify = (pos_sumare_img[0]/pos_sumare[0])
                 difx = (pos_sumare_img[1]/pos_sumare[1])
 
-                posx = pos_sumare[1] - ((vlon - pos_sumare[1]) * 22)
+                posx = pos_sumare[1] - ((vlon - pos_sumare[1]) * 32.5)
                 valorx = posx * difx
-                posy = pos_sumare[0] + ((vlat - pos_sumare[0]) * 22)
+                posy = pos_sumare[0] + ((vlat - pos_sumare[0]) * 19.5)
                 valory = posy * dify
                 
                 rgb_im = img.convert('RGB')
@@ -119,11 +119,11 @@ def get_radar_data(station_name, met):
                 print(stats.pearsonr(df_correlacao['15 min'],df_correlacao['reflect']))
     else:
         df_correlacao.loc[df_correlacao.index.values,'CHUVA'] = df_correlacao['CHUVA'].fillna(0)
-            if df['reflect'].unique().size == 1  or df['reflect'].unique().size == 2 :
-                print('Não possui nenhum registro de reflectividade')
-            else:
-                print(stats.spearmanr(df_correlacao['CHUVA'],df_correlacao['reflect']))
-                print(stats.pearsonr(df_correlacao['CHUVA'],df_correlacao['reflect']))
+        if df['reflect'].unique().size == 1  or df['reflect'].unique().size == 2 :
+            print('Não possui nenhum registro de reflectividade')
+        else:
+            print(stats.spearmanr(df_correlacao['CHUVA'],df_correlacao['reflect']))
+            print(stats.pearsonr(df_correlacao['CHUVA'],df_correlacao['reflect']))
 
     
 
