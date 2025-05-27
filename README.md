@@ -1,16 +1,105 @@
 # AtmoSeer
 
-## About
+AtmoSeer is a set of Python scripts for downloading, processing, and analyzing atmospheric and meteorological data from sources such as NASA GPM and GOES-16. It supports environment setup via Conda and requires authentication for NASA Earthdata access. This project also provides a pipeline to build rainfall forecast models. The pipeline can be configured with different meteorological data sources.
 
-This project provides a pipeline to build rainfall forecast models. The pipeline can be configured with different meteorological data sources.
+---
 
-## Install
+## 🔧 Installation
 
-In the root directory of this repository, type the following command (you must have conda installed in your system):
+### 1. Clone the Repository
 
+```bash
+git clone https://github.com/your-org/atmoseer.git
+cd atmoseer
+````
+
+### 2. Set NASA Earthdata Credentials
+
+Before running the setup script, you must set your NASA Earthdata credentials as environment variables:
+
+```bash
+export EARTHDATA_USER="your_username"
+export EARTHDATA_PASS="your_password"
+```
+
+> You can register for a free NASA Earthdata account at [https://urs.earthdata.nasa.gov](https://urs.earthdata.nasa.gov).
+
+### 3. Run the Setup Script
+
+The `setup.sh` script will:
+
+* Remove any existing Conda environment named `atmoseer`
+* Create a new Conda environment using `config/environment.yml`
+* Create necessary data directories
+* Configure `.netrc` and `.urs_cookies` in your home directory for Earthdata access
+
+```bash
 ./setup.sh
+```
 
-## Project pipeline
+---
+
+## 🚀 Usage
+
+After the environment is set up, activate it:
+
+```bash
+conda activate atmoseer
+```
+
+Run one of the data downloaders or processing scripts, for example:
+
+```bash
+python src/gpm_downloader_cropper.py -y 2022 -u your_username -r
+```
+
+> Each script may have its own arguments and configuration. Refer to inline comments or add `--help` if implemented.
+
+---
+
+## 📁 Directory Structure
+
+```
+atmoseer/
+├── config/                 # Conda environment and config files
+│   └── environment.yml
+├── data/                  # Automatically created data directories
+│   ├── ws/
+│   ├── as/
+│   ├── NWP/ERA5/
+│   ├── GPM/
+│   ├── datasets/
+│   └── goes16/
+├── src/                   # Scripts for downloading and processing data, and for model training
+│   └── gpm_downloader_cropper.py
+    └── ...
+├── setup.sh               # Installation script
+└── README.md              # This file
+```
+
+---
+
+## 🛠 Requirements
+
+* [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/)
+* Linux or WSL (recommended)
+* Internet access for installing packages and accessing NASA endpoints
+
+---
+
+## 🧾 License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
+
+---
+
+## 👥 Acknowledgments
+
+* NASA GES DISC — [https://disc.gsfc.nasa.gov](https://disc.gsfc.nasa.gov)
+* Earthdata Login Services — [https://urs.earthdata.nasa.gov](https://urs.earthdata.nasa.gov)
+
+
+## Main Project Scripts
 
 The project pipeline is defined as a sequence of three steps: (1) data retrieving, (2) data pre-processing and (3) model training. These steps are implemented as Python scripts in the `./src` directory.
 
