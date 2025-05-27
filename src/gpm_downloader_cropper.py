@@ -75,6 +75,8 @@ import pytz
 from netCDF4 import Dataset
 import globals
 import numpy as np
+import time
+
 
 def set_log(name, fname, level):
     """Set up logging with a file handler
@@ -229,15 +231,43 @@ def delete_file(file_path):
         print(f"Error deleting file: {e}")
 
 
+def robust_download(session, url, retries=5, backoff_factor=2, **kwargs):
+    """
+    Download a file with retries and exponential backoff.
+    Args:
+        session (requests.Session): The requests session to use for the download.
+        url (str): The URL of the file to download.
+        retries (int): Number of retry attempts.
+        backoff_factor (int): Factor by which to increase wait time between retries.
+        **kwargs: Additional keyword arguments to pass to requests.get().
+    Returns:
+        requests.Response: The response object if the download is successful.
+        None: If the download fails after all retries.
+    """
+    for attempt in range(retries):
+        try:
+            response = session.get(url, timeout=600, **kwargs)
+            response.raise_for_status()
+            return response
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            wait_time = backoff_factor ** attempt
+            print(f"Attempt {attempt + 1} failed: {e}. Retrying in {wait_time} seconds...")
+            time.sleep(wait_time)
+        except requests.exceptions.RequestException as e:
+            print(f"Permanent failure: {e}")
+            break
+    return None
+
 def download_file(session, url, fname, local_dir, size, data_log):
     '''Download file using requests '''
     status = 'fine'
     data_log.debug(url)
-
-    # r = session.get(url)
     try:
         # Optionally, set a timeout for the request to prevent hanging.
-        r = session.get(url, timeout=300)
+        r = robust_download(session, url)
+        if r is None:
+            print(f"Failed to download {url} after multiple retries.")
+            sys.exit(1)
         r.raise_for_status()  # Optionally raise HTTPError for bad responses (4xx, 5xx)
     except requests.exceptions.Timeout as e:
         print("The request timed out:", e)
