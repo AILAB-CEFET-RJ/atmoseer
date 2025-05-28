@@ -120,22 +120,6 @@ def set_log(name, fname, level):
     return logger
 
 
-# def check_md5sum(filename, logger):
-#     """Check local and remote md5 checksum and return comparison
-#     This is much slower then checking modified date
-#     """
-
-#     m = hashlib.md5()
-#     self.ftp.retrbinary('RETR %s' % filename, m.update)
-#     ftp_md5 =  m.hexdigest()
-#     local_md5 = hashlib.md5(open(filename,'rb').read()).hexdigest()
-#     logger.debug(f"File: {filename}")
-#     logger.debug(f"Local md5: {local_md5}")
-#     logger.debug(f"ftp md5: {ftp_md5}")
-#     different = local_md5 != ftp_md5
-#     return different
-
-
 def check_mdt(req, fpath, logger, remoteModDate=None, furl=None,
               head_key='Last-modified'):
     """Check local and remote modified time and return comparison
@@ -177,47 +161,43 @@ def print_summary(updated, new, error, logger):
     logger.info("\n\n")
 
 
-# def get_credentials(fname, token=False):
-#     """Open file and read username/passowrd or token
-
-#     Requires information to be formatted as
-#     1st line: username
-#     2nd line: password
-#     or if token True
-#     1st line: token
-#     """
-
-#     f = open(fname, "r")
-#     lines = f.readlines()
-#     if token:
-#         utoken = lines[0].replace("\n","")
-#         credentials = (token,)
-#     else:
-#         uname = lines[0].replace("\n","")
-#         passw = lines[1].replace("\n","")
-#         credentials = (uname,passw)
-#     return credentials
-
-# --------------------------
+import argparse
 
 def parse_input():
     ''' Parse input arguments '''
-    parser = argparse.ArgumentParser(description='''Retrieve checksum value for the TRMM HDF 
-             files directly from TRMM http server using xml.etree to read the corresponding field. 
-             Usage: python gpm-opendap.py -y <year>  ''', formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('-y','--year', type=int, help='year to process',
-                        required=True)
-    parser.add_argument('-u','--user', type=str, help='user account',
-                        required=True)
-    parser.add_argument('-p','--pwd', type=str, help='account password',
-                        default=None, required=False)
-    parser.add_argument('-r','--day_range', type=str, help=('Range of days'+
-                        ' to download from selected year. ' +
-                        'Pass as string "123/125" .'),
-                        default="/", required=False)
-    parser.add_argument('-d','--debug', action='store_true', required=False,
-                        help='Print out debug information, default is False')
+    parser = argparse.ArgumentParser(
+        description='''Retrieve GPM-IMERG data from NASA server for a given date range.''',
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
+    parser.add_argument(
+        '--ignored_months', type=int, nargs='*', default=[],
+        help='List of month numbers (1-12) to ignore in the download process. Example: --ignored_months 6 7'
+    )
+
+    parser.add_argument(
+        '--begin_date', type=str, required=True,
+        help='Start date in format YYYY/MM/DD'
+    )
+    parser.add_argument(
+        '--end_date', type=str, required=True,
+        help='End date in format YYYY/MM/DD'
+    )
+    parser.add_argument(
+        '-u', '--user', type=str, required=True,
+        help='User account'
+    )
+    parser.add_argument(
+        '-p', '--pwd', type=str, default=None, required=False,
+        help='Account password (optional if GPMPWD env variable is set)'
+    )
+    parser.add_argument(
+        '-d', '--debug', action='store_true', required=False,
+        help='Print out debug information (default is False)'
+    )
+
     return vars(parser.parse_args())
+
 
 def delete_file(file_path):
     try:
@@ -470,44 +450,62 @@ def open_session(usr, pwd):
     cookies=requests.utils.dict_from_cookiejar(session.cookies)
     return session 
 
-'''
-Before running this script, perform the three steps described below.
+from datetime import datetime, timedelta
+import os
+import sys
 
-1) Create an user account in the Earthdata Portal (https://urs.earthdata.nasa.gov/users/new)
+from datetime import datetime, timedelta
+import os
 
-2) Configure your username and password for authentication using a .netrc file
-   > cd ~
-   > touch .netrc
-   > echo "machine urs.earthdata.nasa.gov login uid_goes_here password password_goes_here" > .netrc
-   > chmod 0600 .netrc
-where uid_goes_here is your Earthdata Login username and password_goes_here is your Earthdata Login password. 
-Note that some password characters can cause problems. A backslash or space anywhere in your password will need to be escaped with an additional backslash. 
-Similarly, if you use a '#' as the first character of your password, it will also need to be escaped with a preceding backslash. 
-Depending on your environment, the use of double-quotes " may be turned into "smart-quotes" automatically. We recommend turning this feature off. 
-Some users have found that the double quotes are not supported by their systems. 
-Some users have found that the > is aliased to >> on some machines. 
-This will append the text instead of overwrite the text. 
-We recommend checking your ~/.netrc file to ensure it only has one line.
-
-3) Create a cookie file. 
-This will be used to persist sessions across individual cURL/Wget calls, making it more efficient.
-  > cd ~
-  > touch .urs_cookies
-  '''
 def main():
-    # read year as external argument and move to data directory
+    '''
+    Before running this script, perform the three steps described below.
+
+    1) Create an user account in the Earthdata Portal (https://urs.earthdata.nasa.gov/users/new)
+
+    2) Configure your username and password for authentication using a .netrc file
+    > cd ~
+    > touch .netrc
+    > echo "machine urs.earthdata.nasa.gov login uid_goes_here password password_goes_here" > .netrc
+    > chmod 0600 .netrc
+    where uid_goes_here is your Earthdata Login username and password_goes_here is your Earthdata Login password. 
+    Note that some password characters can cause problems. A backslash or space anywhere in your password will need to be escaped with an additional backslash. 
+    Similarly, if you use a '#' as the first character of your password, it will also need to be escaped with a preceding backslash. 
+    Depending on your environment, the use of double-quotes " may be turned into "smart-quotes" automatically. We recommend turning this feature off. 
+    Some users have found that the double quotes are not supported by their systems. 
+    Some users have found that the > is aliased to >> on some machines. 
+    This will append the text instead of overwrite the text. 
+    We recommend checking your ~/.netrc file to ensure it only has one line.
+
+    3) Create a cookie file. 
+    This will be used to persist sessions across individual cURL/Wget calls, making it more efficient.
+    > cd ~
+    > touch .urs_cookies
+    '''
     args = parse_input()
-    yr = args['year']
+
+    begin_date = datetime.strptime(args["begin_date"], "%Y/%m/%d")
+    end_date = datetime.strptime(args["end_date"], "%Y/%m/%d")
     user = args["user"]
-    dr = args["day_range"].split("/")
-    # create list of 'days' directories to download
-    if dr[0] != "":
-        fromd = int(dr[0])
-        tod = int(dr[1]) + 1
-        days = [str(i).zfill(3) for i in range(fromd, tod)]
-    else:
-        days =[]
-    # get server account password
+
+    if begin_date > end_date:
+        raise ValueError("begin_date must be earlier than or equal to end_date")
+
+    if begin_date.year != end_date.year:
+        raise ValueError("Date range must be within the same year")
+
+    yr = str(begin_date.year)
+    ignored_months = args.get("ignored_months", [])
+
+    # Gerar lista de dias julianos válidos
+    delta = end_date - begin_date
+    days = []
+    for i in range(delta.days + 1):
+        current_date = begin_date + timedelta(days=i)
+        if current_date.month not in ignored_months:
+            julian_day = str(current_date.timetuple().tm_yday).zfill(3)
+            days.append(julian_day)
+
     try:
         pwd = args["pwd"]
         if pwd is None:
@@ -515,30 +513,20 @@ def main():
     except:
         print("Pass a password as input or set the GPMPWD variable")
 
-    # define main directories, user and date 
     today = datetime.today().strftime('%Y-%m-%d')
     sys_user = os.getenv("USER")
     root_dir = os.getenv("AUSREFDIR", ".")
     run_dir = f"{root_dir}"
-    # define http_url for GPM-IMERG GESCDISC http server and data_dir for local collection
+
     http_url = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
-    # we are using a temp dir because we concatenate the files after
     data_dir = f"{root_dir}/data/GPM"
     flog = f"{run_dir}/gpm_update_log.txt"
 
-    # set log
-    today = datetime.today().strftime('%Y-%m-%d')
     level = "info"
-    if args["debug"]:
+    if args.get("debug", False):
         level = "debug"
     data_log = set_log('gpmlog', flog, level)
 
-    # read year as external argument and move to data directory
-    # try:
-    #     os.chdir(f"{data_dir}/{yr}")
-    # except:
-    #     os.mkdir(f"{data_dir}/{yr}")
-    # Check if the directory exists
     directory = f"{data_dir}/{yr}"
     if not os.path.exists(directory):
         os.mkdir(directory)
@@ -546,12 +534,12 @@ def main():
     else:
         print(f"Directory '{directory}' already exists.")
 
-    # open a request session and download cookies
     session = open_session(user, pwd)
-    status = download_yr(session, http_url, yr, data_dir, days, data_log)#, args["ignored_months"])
+    status = download_yr(session, http_url, yr, data_dir, days, data_log)
 
     data_log.info(f"Updated on {today} by {sys_user}")
-    print_summary(status['updated'], status['new'],
-                  status['error'], data_log)
+    print_summary(status['updated'], status['new'], status['error'], data_log)
+
+
 if __name__ == "__main__":
     main()
