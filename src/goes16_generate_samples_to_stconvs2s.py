@@ -8,7 +8,6 @@ import xarray as xr
 
 
 def process_feature(feature_name, file_pattern):
-    global combined_ds
     timestamps = []
     data_list = []
 
@@ -62,16 +61,10 @@ def process_feature(feature_name, file_pattern):
             },
         )
 
-        # Merge this feature's dataset with the combined dataset
-        if combined_ds.dims["time"] == 0:  # If combined_ds is still empty
-            combined_ds = feature_ds
-        else:
-            # Align time and concatenate along the channel dimension
-            combined_ds = xr.concat([combined_ds, feature_ds], dim="channel")
-
+        return feature_ds
+    return None
 
 def process_target(target_name, file_pattern):
-    global target_ds
     timestamps = []
     data_list = []
 
@@ -124,12 +117,8 @@ def process_target(target_name, file_pattern):
             },
         )
 
-        # Merge this feature's dataset with the combined dataset
-        if target_ds.dims["time"] == 0:  # If target_ds is still empty
-            target_ds = feature_ds
-        else:
-            # Align time and concatenate along the channel dimension
-            target_ds = xr.concat([target_ds, feature_ds], dim="channel")
+        return feature_ds
+    return None
 
 
 # Function to check for maximum gap within a sample
@@ -145,10 +134,11 @@ def collect_samples(features_ds, target_ds, timestep, max_gap):
     """Collect valid X_samples and Y_samples from features_ds and target_ds."""
     X_samples, Y_samples = [], []
     times = features_ds.time  # Keep as xarray.DataArray to use diff()
+    expected_x_shape = None
+    expected_y_shape = None
     
     # Iterate through the features_ds in sliding windows
     for i in range(len(times) - timestep):
-        
         time_window_x = times.isel(time=slice(i, i + timestep))
         time_window_y = times.isel(time=slice(i + 1, i + timestep + 1))
 
@@ -162,9 +152,27 @@ def collect_samples(features_ds, target_ds, timestep, max_gap):
         X_sample = features_ds.isel(time=slice(i, i + timestep)).data
         Y_sample = target_ds.isel(time=slice(i + 1, i + timestep + 1)).data
 
-        X_samples.append(X_sample)
-        Y_samples.append(Y_sample)
-    
+        # Set expected shapes on first iteration
+        if expected_x_shape is None:
+            expected_x_shape = X_sample.shape
+        if expected_y_shape is None:
+            expected_y_shape = Y_sample.shape
+
+        # Pad X_sample if needed
+        if X_sample.shape != expected_x_shape:
+            pad_width = [(0, max(0, expected_x_shape[j] - X_sample.shape[j])) for j in range(len(expected_x_shape))]
+            X_sample = np.pad(X_sample, pad_width, mode='constant', constant_values=0)
+        # Pad Y_sample if needed
+        if Y_sample.shape != expected_y_shape:
+            pad_width = [(0, max(0, expected_y_shape[j] - Y_sample.shape[j])) for j in range(len(expected_y_shape))]
+            Y_sample = np.pad(Y_sample, pad_width, mode='constant', constant_values=0)
+
+        # Only append if shapes now match expected
+        if X_sample.shape == expected_x_shape and Y_sample.shape == expected_y_shape:
+            X_samples.append(X_sample)
+            Y_samples.append(Y_sample)
+        else:
+            print(f"Skipping sample at index {i} due to shape mismatch after padding: X {X_sample.shape}, Y {Y_sample.shape}")
     return X_samples, Y_samples
 
 
@@ -220,58 +228,62 @@ if __name__ == "__main__":
     # ===================
     # Features processing
     # ===================
-
-    # Creating an empty dataset
-    combined_ds = xr.Dataset(
-        {
-            "data": (("time", "lat", "lon", "channel"), np.empty((0, lat_dim, lon_dim, 0))),
-        },
-        coords={
-            "lat": np.arange(lat_dim),
-            "lon": np.arange(lon_dim),
-            "channel": [],
-        },
-        attrs={
-            "description": "Consolidated NetCDF file with multiple features",
-        },
-    )
-
-    # Process each feature
+    feature_datasets = []
+    feature_times = None
     for feature_name in sorted(glob(f"{features_path}/*")):
         print('Processing', feature_name)
         if os.path.isdir(feature_name):
             feature_name_short = os.path.basename(feature_name)
             file_pattern = f"{feature_name}/**/*.nc"
-            process_feature(feature_name_short, file_pattern)
-    
+            ds = process_feature(feature_name_short, file_pattern)
+            if ds is not None:
+                feature_datasets.append(ds)
+                if feature_times is None:
+                    feature_times = set(ds.time.values)
+                else:
+                    feature_times = feature_times & set(ds.time.values)
+    if not feature_datasets:
+        raise RuntimeError("No feature datasets found!")
+    # Intersect all feature times
+    feature_times = sorted(feature_times)
+    # Subset all features to common times
+    feature_datasets = [ds.sel(time=feature_times) for ds in feature_datasets]
+    # Concatenate along channel
+    combined_ds = xr.concat(feature_datasets, dim="channel")
+
     # =================
     # Target processing
     # =================
-
-    # Creating another empty dataset
-    target_ds = xr.Dataset(
-        {
-            "data": (("time", "lat", "lon", "channel"), np.empty((0, lat_dim, lon_dim, 0))),
-        },
-        coords={
-            "lat": np.arange(lat_dim),
-            "lon": np.arange(lon_dim),
-            "channel": [],
-        },
-        attrs={
-            "description": "Consolidated NetCDF file with multiple features",
-        },
-    )
-
-    # Process each target
+    target_datasets = []
+    target_times = None
     for target_name in sorted(glob(f"{target_path}/*")):
         print('Processing', target_name)
         if os.path.isdir(target_name):
             target_name_short = os.path.basename(target_name)
             file_pattern = f"{target_name}/**/*.nc"
-            process_target(target_name_short, file_pattern)
+            ds = process_target(target_name_short, file_pattern)
+            if ds is not None:
+                target_datasets.append(ds)
+                if target_times is None:
+                    target_times = set(ds.time.values)
+                else:
+                    target_times = target_times & set(ds.time.values)
+    if not target_datasets:
+        raise RuntimeError("No target datasets found!")
+    # Intersect all target times
+    target_times = sorted(target_times)
+    # Subset all targets to common times
+    target_datasets = [ds.sel(time=target_times) for ds in target_datasets]
+    # Concatenate along channel
+    target_ds = xr.concat(target_datasets, dim="channel")
 
-    # =================
+    # ===============
+    # Align features and targets on common times
+    # ===============
+    common_times = sorted(set(combined_ds.time.values) & set(target_ds.time.values))
+    combined_ds = combined_ds.sel(time=common_times)
+    target_ds = target_ds.sel(time=common_times)
+
     print("Collecting samples...")
     X_samples, Y_samples = collect_samples(combined_ds, target_ds, timestep, max_gap)
 
@@ -279,25 +291,23 @@ if __name__ == "__main__":
     X_array = np.stack(X_samples)
     Y_array = np.stack(Y_samples)
 
-    # Pad Y_array along the channel dimension to match the number of channels in X_array
-    required_channels = X_array.shape[-1]  # e.g., 5
-    current_channels = Y_array.shape[-1]   # e.g., 1
+    # STConvS2S requires input and output to have same number of channels
+    # Replicate precipitation data across all 5 channels to match X_array
+    required_channels = X_array.shape[-1]  # Should be 5
+    current_channels = Y_array.shape[-1]   # Should be 1
+    
+    if current_channels == 1 and required_channels > 1:
+        # Replicate precipitation across all channels
+        Y_array = np.repeat(Y_array, required_channels, axis=-1)
+        print(f"Replicated precipitation data across {required_channels} channels to match X input structure")
+    
+    print(f"X_array shape: {X_array.shape}")
+    print(f"Y_array shape: {Y_array.shape}")
+    print("STConvS2S requires matching channel dimensions between input and output")
 
-    if current_channels < required_channels:
-        pad_amount = required_channels - current_channels
-        # np.pad expects a pad_width tuple for each dimension: (before, after)
-        Y_array = np.pad(Y_array, pad_width=((0, 0),  # sample dimension
-                                             (0, 0),  # time dimension
-                                             (0, 0),  # lat dimension
-                                             (0, 0),  # lon dimension
-                                             (0, pad_amount)),  # channel dimension
-                        mode='constant', constant_values=0)
-        
-    # Extract coordinates from the dataset
     lat = combined_ds.lat.values
     lon = combined_ds.lon.values
 
-    # Cria o xarray.Dataset
     output_ds = xr.Dataset(
         {
             "x": (["sample", "time", "lat", "lon", "channel"], X_array),
@@ -308,12 +318,11 @@ if __name__ == "__main__":
             "lon": lon,
         },
         attrs={
-            "description": "The variables have weather features values and are separable in x and y, "
-                            "which are to be used as input and target of the machine learning algorithms, respectively."
+            "description": "X contains 5 meteorological feature channels, Y contains precipitation data replicated across 5 channels. "
+                            "X and Y have matching channel dimensions as required by STConvS2S architecture."
         },
     )
 
-
-    # Saves the dataset into a NetCDF file
+    # No fillna(0) needed if alignment is correct
     output_ds.to_netcdf(output_path)
     print("Dataset salvo em", output_path)
