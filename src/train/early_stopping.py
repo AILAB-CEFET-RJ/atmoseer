@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-import globals as globals
+from config import globals
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""

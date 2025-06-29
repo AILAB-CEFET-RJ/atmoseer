@@ -19,14 +19,12 @@
 from train.base_classifier import BaseClassifier
 import torch
 import torch.nn as nn
-from torch.utils.data import TensorDataset
 import torch.nn.functional as F
 from train.training_utils import *
 from train.evaluate import *
-from rainfall import ordinal_encoding_to_level
+from src.utils.rainfall import ordinal_encoding_to_level
 from train.early_stopping import *
-import rainfall as rp
-import globals as globals
+from utils import rainfall
 
 class OrdinalClassifier(BaseClassifier):
     def __init__(self, learner):

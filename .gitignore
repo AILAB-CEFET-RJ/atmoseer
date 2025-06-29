@@ -36,3 +36,11 @@ notebooks/GPM/imerg_rio_animation.mp4
 notebooks/GPM/imerg_rio_animation_2024_01_01.mp4
 anim/PN_GLM/animation.mp4
 notebooks/RJ-30m-DEM.tif
+*.tgz
+src/config/__pycache__/__init__.cpython-310.pyc
+src/config/__pycache__/globals.cpython-310.pyc
+src/goes16/__pycache__/__init__.cpython-310.pyc
+src/goes16/__pycache__/features.cpython-310.pyc
+src/goes16/__pycache__/utils.cpython-310.pyc
+src/goes16/__pycache__/goes16_cmi_feature_extractor_extended.cpython-311.pyc
+src/goes16/__pycache__/goes16_cmi_feature_extractor.cpython-311.pyc

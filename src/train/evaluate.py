@@ -3,8 +3,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import pandas as pd
 import sklearn.metrics as skl
-from rainfall import get_events_per_level, value_to_level
-import rainfall as rp
+from src.utils.rainfall import get_events_per_level, value_to_level
+from utils import rainfall as rp
 
 def accuracy(outputs, labels):
     _, preds = torch.max(outputs, dim=1)
