@@ -58,21 +58,25 @@ src/goes16/
 Use the Makefile to extract selected features. An example:
 
 ```bash
-make goes16-features FEATS="--pn --fa --toct --verbose"
+make goes16-features FEATS="--pn --gtn --fa --wv_grad --li_proxy --toct --pn_std --verbose"
 ```
+
 
 ### 📂 Expected Input Structure
 
 GOES-16 ABI data must be organized as follows:
 
 ```
-data/goes16/CMI/
-├── 2020/
-│   ├── C09/
-│   ├── C13/
-│   └── ...
-├── 2021/
-│   └── ...
+data/
+├── goes16/
+│   ├── CMI/
+│   │   └── <year>/
+│   │       ├── C09/
+│   │       ├── C13/
+│   │       └── ...
+│   └── features/
+│       └── <feature_name>/
+│           └── <year>/
 ```
 
 Each channel directory contains files named like:
@@ -92,3 +96,19 @@ features/CMI/{feature_name}/{year}/FEATURE_TIMESTAMP.nc
 ```
 
 Where `feature_name` is one of the extracted variables (e.g., `temperatura_topo_nuvem`, `proxy_estabilidade`, etc.).
+
+## Feature Validation and Logging
+
+### Validating Generated Features
+
+You can validate whether the generated features are consistent with the source channels:
+
+make validate-feature FEAT=pn CANAIS="C09 C13"
+
+### Log Analysis
+
+Each feature module generates a `.log` file (e.g. pn.log, gtn.log, ...) in `src/goes16/features/`.
+
+To summarize warnings and errors across all logs:
+
+make analyze-logs

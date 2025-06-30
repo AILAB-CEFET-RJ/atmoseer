@@ -6,7 +6,10 @@ WS_ALERTARIO_DATA_DIR = "./data/ws/alertario/ws/"
 GS_ALERTARIO_DATA_DIR = "./data/ws/alertario/rain_gauge_era5_fused/"
 
 # WS_GOES_DATA_DIR = "atmoseer/data/ws/goes16"
-GOES_DATA_DIR = "./data/goes16"
+GOES16_DATA_DIR = "./data/goes16/CMI/"
+
+# Directory to store the extracted features from GOES-16 data
+GOES16_FEATURES_DIR = './data/goes16/features/'
 
 # Atmospheric sounding datasource directory
 NWP_DATA_DIR = "./data/NWP/"
@@ -22,9 +25,6 @@ TPW_DATA_DIR = "./data/goes16/wsoi"
 
 # Directory to store the train/val/test datasets for each weather station of interest
 DATASETS_DIR = './data/datasets/'
-
-# Directory to store the extracted features from GOES-16 data
-GOES16_FEATURES_DIR = './data/goes16/features/'
 
 # Directory to store the generated models and their corresponding reports
 MODELS_DIR = './models/'
