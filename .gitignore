@@ -44,3 +44,11 @@ src/goes16/__pycache__/features.cpython-310.pyc
 src/goes16/__pycache__/utils.cpython-310.pyc
 src/goes16/__pycache__/goes16_cmi_feature_extractor_extended.cpython-311.pyc
 src/goes16/__pycache__/goes16_cmi_feature_extractor.cpython-311.pyc
+src/goes16/features/__pycache__/__init__.cpython-310.pyc
+src/goes16/features/__pycache__/fa.cpython-310.pyc
+src/goes16/features/__pycache__/gtn.cpython-310.pyc
+src/goes16/features/__pycache__/li_proxy.cpython-310.pyc
+src/goes16/features/__pycache__/pn_std.cpython-310.pyc
+src/goes16/features/__pycache__/pn.cpython-310.pyc
+src/goes16/features/__pycache__/toct.cpython-310.pyc
+src/goes16/features/__pycache__/wv_grad.cpython-310.pyc
