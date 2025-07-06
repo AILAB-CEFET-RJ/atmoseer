@@ -308,18 +308,50 @@ if __name__ == "__main__":
     lat = combined_ds.lat.values
     lon = combined_ds.lon.values
 
+    # Extract feature names from the combined dataset
+    feature_names = combined_ds.channel.values.tolist()
+    print(f"Feature names: {feature_names}")
+
+    # Extract sample timestamps - for each sample, get the timestamps of that sample
+    sample_timestamps = []
+    times_array = combined_ds.time.values  # Get the actual datetime timestamps from the dataset
+    
+    for i in range(len(X_samples)):
+        # Get the timestamps for this sample (from the sliding window)
+        # X_sample uses time slice [i:i+timestep], so get those exact timestamps
+        start_idx = i
+        end_idx = i + timestep
+        sample_times = times_array[start_idx:end_idx]
+        sample_timestamps.append(sample_times)
+
+    # Convert to numpy array of datetime64
+    sample_timestamps_array = np.array(sample_timestamps)
+    print(f"Sample timestamps shape: {sample_timestamps_array.shape}")
+    print(f"First sample timestamps: {sample_timestamps_array[0] if len(sample_timestamps_array) > 0 else 'No samples'}")
+
     output_ds = xr.Dataset(
         {
             "x": (["sample", "time", "lat", "lon", "channel"], X_array),
             "y": (["sample", "time", "lat", "lon", "channel"], Y_array),
         },
         coords={
+            "sample": np.arange(len(X_samples)),
+            "time": np.arange(timestep),  # Relative time indices within each sample
             "lat": lat,
             "lon": lon,
+            "channel": feature_names,  # Add feature names as channel coordinates
+            "sample_timestamps": (["sample", "time"], sample_timestamps_array),  # Actual timestamps for each sample
         },
         attrs={
             "description": "X contains 5 meteorological feature channels, Y contains precipitation data replicated across 5 channels. "
-                            "X and Y have matching channel dimensions as required by STConvS2S architecture."
+                            "X and Y have matching channel dimensions as required by STConvS2S architecture.",
+            "feature_channels": str({
+                f"channel_{i}": feature_names[i] for i in range(len(feature_names))
+            }),
+            "timestep": timestep,
+            "max_gap_minutes": max_gap,
+            "total_samples": len(X_samples),
+            "creation_date": str(np.datetime64('now')),
         },
     )
 
