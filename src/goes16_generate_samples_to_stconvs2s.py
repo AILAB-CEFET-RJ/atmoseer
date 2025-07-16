@@ -42,6 +42,12 @@ def process_feature(feature_name, file_pattern):
                 data_list.append(data)
 
     if data_list:
+        # Sort timestamps and data_list together by timestamp
+        sorted_pairs = sorted(zip(timestamps, data_list))
+        timestamps_sorted, data_list_sorted = zip(*sorted_pairs)
+        timestamps = list(timestamps_sorted)
+        data_list = list(data_list_sorted)
+
         # Stack data along the time dimension
         feature_data = np.stack(data_list, axis=0)  # Shape: (time, lat, lon)
 
@@ -98,6 +104,12 @@ def process_target(target_name, file_pattern):
                 data_list.append(data)
 
     if data_list:
+        # Sort timestamps and data_list together by timestamp
+        sorted_pairs = sorted(zip(timestamps, data_list))
+        timestamps_sorted, data_list_sorted = zip(*sorted_pairs)
+        timestamps = list(timestamps_sorted)
+        data_list = list(data_list_sorted)
+
         # Stack data along the time dimension
         feature_data = np.stack(data_list, axis=0)  # Shape: (time, lat, lon)
 
@@ -132,11 +144,10 @@ def check_max_gap(timestamps):
 # Function to collect samples
 def collect_samples(features_ds, target_ds, timestep, max_gap, offset):
     """Collect valid X_samples and Y_samples from features_ds and target_ds."""
-    X_samples, Y_samples = [], []
+    X_samples, Y_samples, accepted_indices = [], [], []
     times = features_ds.time  # Keep as xarray.DataArray to use diff()
     expected_x_shape = None
     expected_y_shape = None
-    
     # Iterate through the features_ds in sliding windows
     for i in range(len(times) - (timestep + offset)):
         time_window_x = times.isel(time=slice(i, i + timestep))
@@ -147,7 +158,6 @@ def collect_samples(features_ds, target_ds, timestep, max_gap, offset):
             continue  # Skip samples with large gaps
         if check_max_gap(time_window_y) > max_gap:
             continue  # Skip samples with large gaps
-        
         # Extract X and Y samples
         X_sample = features_ds.isel(time=slice(i, i + timestep)).data
         Y_sample = target_ds.isel(time=slice(i + offset, i + offset + timestep)).data
@@ -171,9 +181,10 @@ def collect_samples(features_ds, target_ds, timestep, max_gap, offset):
         if X_sample.shape == expected_x_shape and Y_sample.shape == expected_y_shape:
             X_samples.append(X_sample)
             Y_samples.append(Y_sample)
+            accepted_indices.append(i)
         else:
             print(f"Skipping sample at index {i} due to shape mismatch after padding: X {X_sample.shape}, Y {Y_sample.shape}")
-    return X_samples, Y_samples
+    return X_samples, Y_samples, accepted_indices
 
 
 if __name__ == "__main__":
@@ -286,7 +297,15 @@ if __name__ == "__main__":
     target_ds = target_ds.sel(time=common_times)
 
     print("Collecting samples...")
-    X_samples, Y_samples = collect_samples(combined_ds, target_ds, timestep, max_gap, offset)
+    X_samples, Y_samples, accepted_indices = collect_samples(combined_ds, target_ds, timestep, max_gap, offset)
+    # After creating output_ds
+
+    # Print the timestamps for the first sample using accepted_indices
+    times_array = combined_ds.time.values
+    if accepted_indices:
+        first_i = accepted_indices[0]
+        print("First sample X timestamps:", times_array[first_i:first_i+timestep])
+        print("First sample Y timestamps:", times_array[first_i+offset:first_i+offset+timestep])
 
     # Convert X_samples and Y_samples to numpy arrays
     X_array = np.stack(X_samples)
@@ -314,17 +333,20 @@ if __name__ == "__main__":
     print(f"Feature names: {feature_names}")
 
 
-    # Extract sample timestamps for X and Y - for each sample, get the timestamps of that sample
+    # Extract sample timestamps for X and Y - for each accepted sample, get the timestamps of that sample
     sample_x_timestamps = []
     sample_y_timestamps = []
     times_array = combined_ds.time.values  # Get the actual datetime timestamps from the dataset
-
-    for i in range(len(X_samples)):
+    for i in accepted_indices:
         # X_sample uses time slice [i:i+timestep]
         sample_x_timestamps.append(times_array[i:i+timestep])
         # Y_sample uses time slice [i+offset:i+offset+timestep]
         sample_y_timestamps.append(times_array[i+offset:i+offset+timestep])
 
+    if accepted_indices:
+        first_i = accepted_indices[0]
+        print("First sample X timestamps:", times_array[first_i:first_i+timestep])
+        print("First sample Y timestamps:", times_array[first_i+offset:first_i+offset+timestep])
     sample_x_timestamps_array = np.array(sample_x_timestamps)
     sample_y_timestamps_array = np.array(sample_y_timestamps)
     print(f"Sample X timestamps shape: {sample_x_timestamps_array.shape}")
