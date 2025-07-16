@@ -298,14 +298,6 @@ if __name__ == "__main__":
 
     print("Collecting samples...")
     X_samples, Y_samples, accepted_indices = collect_samples(combined_ds, target_ds, timestep, max_gap, offset)
-    # After creating output_ds
-
-    # Print the timestamps for the first sample using accepted_indices
-    times_array = combined_ds.time.values
-    if accepted_indices:
-        first_i = accepted_indices[0]
-        print("First sample X timestamps:", times_array[first_i:first_i+timestep])
-        print("First sample Y timestamps:", times_array[first_i+offset:first_i+offset+timestep])
 
     # Convert X_samples and Y_samples to numpy arrays
     X_array = np.stack(X_samples)
@@ -343,10 +335,6 @@ if __name__ == "__main__":
         # Y_sample uses time slice [i+offset:i+offset+timestep]
         sample_y_timestamps.append(times_array[i+offset:i+offset+timestep])
 
-    if accepted_indices:
-        first_i = accepted_indices[0]
-        print("First sample X timestamps:", times_array[first_i:first_i+timestep])
-        print("First sample Y timestamps:", times_array[first_i+offset:first_i+offset+timestep])
     sample_x_timestamps_array = np.array(sample_x_timestamps)
     sample_y_timestamps_array = np.array(sample_y_timestamps)
     print(f"Sample X timestamps shape: {sample_x_timestamps_array.shape}")
