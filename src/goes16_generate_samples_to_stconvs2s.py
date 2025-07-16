@@ -130,7 +130,7 @@ def check_max_gap(timestamps):
 
 
 # Function to collect samples
-def collect_samples(features_ds, target_ds, timestep, max_gap):
+def collect_samples(features_ds, target_ds, timestep, max_gap, offset):
     """Collect valid X_samples and Y_samples from features_ds and target_ds."""
     X_samples, Y_samples = [], []
     times = features_ds.time  # Keep as xarray.DataArray to use diff()
@@ -138,9 +138,9 @@ def collect_samples(features_ds, target_ds, timestep, max_gap):
     expected_y_shape = None
     
     # Iterate through the features_ds in sliding windows
-    for i in range(len(times) - timestep):
+    for i in range(len(times) - (timestep + offset)):
         time_window_x = times.isel(time=slice(i, i + timestep))
-        time_window_y = times.isel(time=slice(i + 1, i + timestep + 1))
+        time_window_y = times.isel(time=slice(i + offset, i + offset + timestep))
 
         # Check for gaps in X_sample's time window
         if check_max_gap(time_window_x) > max_gap:
@@ -150,7 +150,7 @@ def collect_samples(features_ds, target_ds, timestep, max_gap):
         
         # Extract X and Y samples
         X_sample = features_ds.isel(time=slice(i, i + timestep)).data
-        Y_sample = target_ds.isel(time=slice(i + 1, i + timestep + 1)).data
+        Y_sample = target_ds.isel(time=slice(i + offset, i + offset + timestep)).data
 
         # Set expected shapes on first iteration
         if expected_x_shape is None:
@@ -224,6 +224,7 @@ if __name__ == "__main__":
     lon_dim = args.lon_dim
     max_gap = args.max_gap
     timestep = args.timestep
+    offset = args.timestep
 
     # ===================
     # Features processing
@@ -285,7 +286,7 @@ if __name__ == "__main__":
     target_ds = target_ds.sel(time=common_times)
 
     print("Collecting samples...")
-    X_samples, Y_samples = collect_samples(combined_ds, target_ds, timestep, max_gap)
+    X_samples, Y_samples = collect_samples(combined_ds, target_ds, timestep, max_gap, offset)
 
     # Convert X_samples and Y_samples to numpy arrays
     X_array = np.stack(X_samples)
@@ -312,22 +313,24 @@ if __name__ == "__main__":
     feature_names = combined_ds.channel.values.tolist()
     print(f"Feature names: {feature_names}")
 
-    # Extract sample timestamps - for each sample, get the timestamps of that sample
-    sample_timestamps = []
-    times_array = combined_ds.time.values  # Get the actual datetime timestamps from the dataset
-    
-    for i in range(len(X_samples)):
-        # Get the timestamps for this sample (from the sliding window)
-        # X_sample uses time slice [i:i+timestep], so get those exact timestamps
-        start_idx = i
-        end_idx = i + timestep
-        sample_times = times_array[start_idx:end_idx]
-        sample_timestamps.append(sample_times)
 
-    # Convert to numpy array of datetime64
-    sample_timestamps_array = np.array(sample_timestamps)
-    print(f"Sample timestamps shape: {sample_timestamps_array.shape}")
-    print(f"First sample timestamps: {sample_timestamps_array[0] if len(sample_timestamps_array) > 0 else 'No samples'}")
+    # Extract sample timestamps for X and Y - for each sample, get the timestamps of that sample
+    sample_x_timestamps = []
+    sample_y_timestamps = []
+    times_array = combined_ds.time.values  # Get the actual datetime timestamps from the dataset
+
+    for i in range(len(X_samples)):
+        # X_sample uses time slice [i:i+timestep]
+        sample_x_timestamps.append(times_array[i:i+timestep])
+        # Y_sample uses time slice [i+offset:i+offset+timestep]
+        sample_y_timestamps.append(times_array[i+offset:i+offset+timestep])
+
+    sample_x_timestamps_array = np.array(sample_x_timestamps)
+    sample_y_timestamps_array = np.array(sample_y_timestamps)
+    print(f"Sample X timestamps shape: {sample_x_timestamps_array.shape}")
+    print(f"Sample Y timestamps shape: {sample_y_timestamps_array.shape}")
+    print(f"First sample X timestamps: {sample_x_timestamps_array[0] if len(sample_x_timestamps_array) > 0 else 'No samples'}")
+    print(f"First sample Y timestamps: {sample_y_timestamps_array[0] if len(sample_y_timestamps_array) > 0 else 'No samples'}")
 
     output_ds = xr.Dataset(
         {
@@ -340,10 +343,11 @@ if __name__ == "__main__":
             "lat": lat,
             "lon": lon,
             "channel": feature_names,  # Add feature names as channel coordinates
-            "sample_timestamps": (["sample", "time"], sample_timestamps_array),  # Actual timestamps for each sample
+            "sample_x_timestamps": (["sample", "time"], sample_x_timestamps_array),  # Actual timestamps for each X sample
+            "sample_y_timestamps": (["sample", "time"], sample_y_timestamps_array),  # Actual timestamps for each Y sample
         },
         attrs={
-            "description": "X contains 5 meteorological feature channels, Y contains precipitation data replicated across 5 channels. "
+            "description": "X contains 9 meteorological feature channels, Y contains precipitation data replicated across 9 channels. "
                             "X and Y have matching channel dimensions as required by STConvS2S architecture.",
             "feature_channels": str({
                 f"channel_{i}": feature_names[i] for i in range(len(feature_names))
