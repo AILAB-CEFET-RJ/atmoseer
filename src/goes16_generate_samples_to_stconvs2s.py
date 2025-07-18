@@ -1,10 +1,54 @@
 import argparse
+from collections import defaultdict
 from glob import glob
 import os
 import re
 import numpy as np
 import pandas as pd
 import xarray as xr
+
+
+def aggregate_by_hour_sum(timestamps, data_list):
+    """
+    Aggregate data_list by hour, summing all values in the same hour.
+    Returns (hourly_timestamps, hourly_data_list), where each timestamp is the end of the hour.
+    """
+    # Group data by hour
+    hour_bins = defaultdict(list)
+    for ts, data in zip(timestamps, data_list):
+        # Use the hour as key (e.g., 2025-07-16T13:00)
+        hour_key = np.datetime64(str(ts)[:13] + ':00')
+        hour_bins[hour_key].append(data)
+    # Aggregate
+    hourly_timestamps = []
+    hourly_data_list = []
+    for hour in sorted(hour_bins.keys()):
+        datas = hour_bins[hour]
+        if datas:
+            summed = np.sum(datas, axis=0)
+            hourly_timestamps.append(hour)
+            hourly_data_list.append(summed)
+    return hourly_timestamps, hourly_data_list
+
+
+def aggregate_by_hour_mean(timestamps, data_list):
+    """
+    Aggregate data_list by hour, averaging all values in the same hour.
+    Returns (hourly_timestamps, hourly_data_list), where each timestamp is the end of the hour.
+    """
+    hour_bins = defaultdict(list)
+    for ts, data in zip(timestamps, data_list):
+        hour_key = np.datetime64(str(ts)[:13] + ':00')
+        hour_bins[hour_key].append(data)
+    hourly_timestamps = []
+    hourly_data_list = []
+    for hour in sorted(hour_bins.keys()):
+        datas = hour_bins[hour]
+        if datas:
+            meaned = np.mean(datas, axis=0)
+            hourly_timestamps.append(hour)
+            hourly_data_list.append(meaned)
+    return hourly_timestamps, hourly_data_list
 
 
 def process_feature(feature_name, file_pattern):
@@ -48,8 +92,10 @@ def process_feature(feature_name, file_pattern):
         timestamps = list(timestamps_sorted)
         data_list = list(data_list_sorted)
 
+        hourly_timestamps, hourly_data_list = aggregate_by_hour_mean(timestamps, data_list)
+
         # Stack data along the time dimension
-        feature_data = np.stack(data_list, axis=0)  # Shape: (time, lat, lon)
+        feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon)
 
         # Expand to include the channel dimension
         feature_data = np.expand_dims(feature_data, axis=-1)  # Shape: (time, lat, lon, 1)
@@ -60,7 +106,7 @@ def process_feature(feature_name, file_pattern):
                 "data": (("time", "lat", "lon", "channel"), feature_data),
             },
             coords={
-                "time": timestamps,
+                "time": hourly_timestamps,
                 "lat": np.arange(lat_dim),
                 "lon": np.arange(lon_dim),
                 "channel": [feature_name],
@@ -110,8 +156,10 @@ def process_target(target_name, file_pattern):
         timestamps = list(timestamps_sorted)
         data_list = list(data_list_sorted)
 
+        hourly_timestamps, hourly_data_list = aggregate_by_hour_sum(timestamps, data_list)
+
         # Stack data along the time dimension
-        feature_data = np.stack(data_list, axis=0)  # Shape: (time, lat, lon)
+        feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon)
 
         # Expand to include the channel dimension
         feature_data = np.expand_dims(feature_data, axis=-1)  # Shape: (time, lat, lon, 1)
@@ -122,7 +170,7 @@ def process_target(target_name, file_pattern):
                 "data": (("time", "lat", "lon", "channel"), feature_data),
             },
             coords={
-                "time": timestamps,
+                "time": hourly_timestamps,
                 "lat": np.arange(lat_dim),
                 "lon": np.arange(lon_dim),
                 "channel": [target_name],
@@ -217,7 +265,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--max-gap", type=int, default=30,
+        "--max-gap", type=int, default=60,
         help="Maximum allowed gap (in minutes) between timestamps in a sample"
     )
 
@@ -256,6 +304,7 @@ if __name__ == "__main__":
                     feature_times = feature_times & set(ds.time.values)
     if not feature_datasets:
         raise RuntimeError("No feature datasets found!")
+    
     # Intersect all feature times
     feature_times = sorted(feature_times)
     # Subset all features to common times
@@ -337,10 +386,6 @@ if __name__ == "__main__":
 
     sample_x_timestamps_array = np.array(sample_x_timestamps)
     sample_y_timestamps_array = np.array(sample_y_timestamps)
-    print(f"Sample X timestamps shape: {sample_x_timestamps_array.shape}")
-    print(f"Sample Y timestamps shape: {sample_y_timestamps_array.shape}")
-    print(f"First sample X timestamps: {sample_x_timestamps_array[0] if len(sample_x_timestamps_array) > 0 else 'No samples'}")
-    print(f"First sample Y timestamps: {sample_y_timestamps_array[0] if len(sample_y_timestamps_array) > 0 else 'No samples'}")
 
     output_ds = xr.Dataset(
         {
