@@ -8,6 +8,28 @@ import pandas as pd
 import xarray as xr
 
 
+def aggregate_by_hour_max_and_avg(timestamps, data_list):
+    """
+    Aggregate data_list by hour, returning both max and mean for each hour.
+    Returns (hourly_timestamps, hourly_data_list), where hourly_data_list contains arrays with shape (lat, lon, 2): [:,:,0]=mean, [:,:,1]=max
+    """
+    hour_bins = defaultdict(list)
+    for ts, data in zip(timestamps, data_list):
+        hour_key = np.datetime64(str(ts)[:13] + ':00')
+        hour_bins[hour_key].append(data)
+    hourly_timestamps = []
+    hourly_data_list = []
+    for hour in sorted(hour_bins.keys()):
+        datas = hour_bins[hour]
+        if datas:
+            meaned = np.mean(datas, axis=0)
+            maxed = np.max(datas, axis=0)
+            stacked = np.stack([meaned, maxed], axis=-1)  # shape: (lat, lon, 2)
+            hourly_timestamps.append(hour)
+            hourly_data_list.append(stacked)
+    return hourly_timestamps, hourly_data_list
+
+
 def aggregate_by_hour_sum(timestamps, data_list):
     """
     Aggregate data_list by hour, summing all values in the same hour.
@@ -92,29 +114,41 @@ def process_feature(feature_name, file_pattern):
         timestamps = list(timestamps_sorted)
         data_list = list(data_list_sorted)
 
-        hourly_timestamps, hourly_data_list = aggregate_by_hour_mean(timestamps, data_list)
-
-        # Stack data along the time dimension
-        feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon)
-
-        # Expand to include the channel dimension
-        feature_data = np.expand_dims(feature_data, axis=-1)  # Shape: (time, lat, lon, 1)
-
-        # Create a dataset for this feature
-        feature_ds = xr.Dataset(
-            {
-                "data": (("time", "lat", "lon", "channel"), feature_data),
-            },
-            coords={
-                "time": hourly_timestamps,
-                "lat": np.arange(lat_dim),
-                "lon": np.arange(lon_dim),
-                "channel": [feature_name],
-            },
-        )
-
+        # Conditional aggregation
+        if feature_name == "densidade_flashes":
+            hourly_timestamps, hourly_data_list = aggregate_by_hour_sum(timestamps, data_list)
+            # Stack data along the time dimension
+            feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon)
+            feature_data = np.expand_dims(feature_data, axis=-1)  # Shape: (time, lat, lon, 1)
+            feature_ds = xr.Dataset(
+                {
+                    "data": (("time", "lat", "lon", "channel"), feature_data),
+                },
+                coords={
+                    "time": hourly_timestamps,
+                    "lat": np.arange(lat_dim),
+                    "lon": np.arange(lon_dim),
+                    "channel": [feature_name],
+                },
+            )
+        else:
+            hourly_timestamps, hourly_data_list = aggregate_by_hour_mean(timestamps, data_list)
+            feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon, 2)
+            feature_data = np.expand_dims(feature_data, axis=-1)  # (time, lat, lon, 1)
+            feature_ds = xr.Dataset(
+                {
+                    "data": (("time", "lat", "lon", "channel"), feature_data),
+                },
+                coords={
+                    "time": hourly_timestamps,
+                    "lat": np.arange(lat_dim),
+                    "lon": np.arange(lon_dim),
+                    "channel": [feature_name],
+                },
+            )
         return feature_ds
     return None
+
 
 def process_target(target_name, file_pattern):
     timestamps = []
