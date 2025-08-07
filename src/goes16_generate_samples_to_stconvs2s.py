@@ -38,7 +38,7 @@ def aggregate_by_hour_sum(timestamps, data_list):
     # Group data by hour
     hour_bins = defaultdict(list)
     for ts, data in zip(timestamps, data_list):
-        # Use the hour as key (e.g., 2025-07-16T13:00)
+        # Use the timestamp as key
         hour_key = np.datetime64(str(ts)[:13] + ':00')
         hour_bins[hour_key].append(data)
     # Aggregate
@@ -58,10 +58,13 @@ def aggregate_by_hour_mean(timestamps, data_list):
     Aggregate data_list by hour, averaging all values in the same hour.
     Returns (hourly_timestamps, hourly_data_list), where each timestamp is the end of the hour.
     """
+    # Group data by hour
     hour_bins = defaultdict(list)
     for ts, data in zip(timestamps, data_list):
+        # Use the timestamp as key
         hour_key = np.datetime64(str(ts)[:13] + ':00')
         hour_bins[hour_key].append(data)
+    # Aggregate
     hourly_timestamps = []
     hourly_data_list = []
     for hour in sorted(hour_bins.keys()):
@@ -85,17 +88,13 @@ def process_feature(feature_name, file_pattern):
         for var_name in ds.variables:
             # Match the timestamp pattern
             match = re.search(r'(?:CMI_)?(\d{4}_\d{2}_\d{2}_\d{2}_\d{2})', var_name)
-
+            
             if match:
                 # Parse timestamp
                 timestamp_str = match.group(1)
                 timestamp = np.datetime64(
                     f"{timestamp_str[:4]}-{timestamp_str[5:7]}-{timestamp_str[8:10]}T{timestamp_str[11:13]}:{timestamp_str[14:]}"
                 )
-
-                minutes = int(timestamp_str[14:])
-                if minutes not in [0, 30]:
-                    continue  # Skip timestamps not on :00 or :30
 
                 timestamps.append(timestamp)
 
@@ -117,35 +116,26 @@ def process_feature(feature_name, file_pattern):
         # Conditional aggregation
         if feature_name == "densidade_flashes":
             hourly_timestamps, hourly_data_list = aggregate_by_hour_sum(timestamps, data_list)
-            # Stack data along the time dimension
-            feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon)
-            feature_data = np.expand_dims(feature_data, axis=-1)  # Shape: (time, lat, lon, 1)
-            feature_ds = xr.Dataset(
-                {
-                    "data": (("time", "lat", "lon", "channel"), feature_data),
-                },
-                coords={
-                    "time": hourly_timestamps,
-                    "lat": np.arange(lat_dim),
-                    "lon": np.arange(lon_dim),
-                    "channel": [feature_name],
-                },
-            )
         else:
             hourly_timestamps, hourly_data_list = aggregate_by_hour_mean(timestamps, data_list)
-            feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon, 2)
-            feature_data = np.expand_dims(feature_data, axis=-1)  # (time, lat, lon, 1)
-            feature_ds = xr.Dataset(
-                {
-                    "data": (("time", "lat", "lon", "channel"), feature_data),
-                },
-                coords={
-                    "time": hourly_timestamps,
-                    "lat": np.arange(lat_dim),
-                    "lon": np.arange(lon_dim),
-                    "channel": [feature_name],
-                },
-            )
+       
+        hourly_timestamps = np.array(hourly_timestamps, dtype='datetime64[ns]')
+        
+        # Stack data along the time dimension
+        feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon)
+        feature_data = np.expand_dims(feature_data, axis=-1)  # Shape: (time, lat, lon, 1)
+        feature_ds = xr.Dataset(
+            {
+                "data": (("time", "lat", "lon", "channel"), feature_data),
+            },
+            coords={
+                "time": hourly_timestamps,
+                "lat": np.arange(lat_dim),
+                "lon": np.arange(lon_dim),
+                "channel": [feature_name],
+            },
+        )
+        
         return feature_ds
     return None
 
@@ -153,7 +143,6 @@ def process_feature(feature_name, file_pattern):
 def process_target(target_name, file_pattern):
     timestamps = []
     data_list = []
-
     files = sorted(glob(file_pattern))
     for file_path in files:
         ds = xr.open_dataset(file_path)
@@ -168,10 +157,6 @@ def process_target(target_name, file_pattern):
                 timestamp = np.datetime64(
                     f"{timestamp_str[:4]}-{timestamp_str[5:7]}-{timestamp_str[8:10]}T{timestamp_str[11:13]}:{timestamp_str[14:]}"
                 )
-
-                minutes = int(timestamp_str[14:])
-                if minutes not in [0, 30]:
-                    continue  # Skip timestamps not on :00 or :30
 
                 timestamps.append(timestamp)
 
@@ -191,6 +176,7 @@ def process_target(target_name, file_pattern):
         data_list = list(data_list_sorted)
 
         hourly_timestamps, hourly_data_list = aggregate_by_hour_sum(timestamps, data_list)
+        hourly_timestamps = np.array(hourly_timestamps, dtype='datetime64[ns]')
 
         # Stack data along the time dimension
         feature_data = np.stack(hourly_data_list, axis=0)  # Shape: (time, lat, lon)
@@ -219,15 +205,13 @@ def process_target(target_name, file_pattern):
 def check_max_gap(timestamps):
     """Check the maximum time difference (gap) in minutes within a sample."""
     time_deltas = timestamps.diff(dim="time") / np.timedelta64(1, "m")  # Convert to minutes
-    max_gap = time_deltas.max().item() if len(time_deltas) > 0 else 0
+    max_gap = time_deltas.max().item()
     return max_gap
 
 
-# Function to collect samples
 def collect_samples(features_ds, target_ds, timestep, max_gap, offset):
-    """Collect valid X_samples and Y_samples from features_ds and target_ds."""
     X_samples, Y_samples, accepted_indices = [], [], []
-    times = features_ds.time  # Keep as xarray.DataArray to use diff()
+    times = features_ds.time
     expected_x_shape = None
     expected_y_shape = None
     # Iterate through the features_ds in sliding windows
@@ -240,6 +224,7 @@ def collect_samples(features_ds, target_ds, timestep, max_gap, offset):
             continue  # Skip samples with large gaps
         if check_max_gap(time_window_y) > max_gap:
             continue  # Skip samples with large gaps
+
         # Extract X and Y samples
         X_sample = features_ds.isel(time=slice(i, i + timestep)).data
         Y_sample = target_ds.isel(time=slice(i + offset, i + offset + timestep)).data
@@ -250,22 +235,14 @@ def collect_samples(features_ds, target_ds, timestep, max_gap, offset):
         if expected_y_shape is None:
             expected_y_shape = Y_sample.shape
 
-        # Pad X_sample if needed
-        if X_sample.shape != expected_x_shape:
-            pad_width = [(0, max(0, expected_x_shape[j] - X_sample.shape[j])) for j in range(len(expected_x_shape))]
-            X_sample = np.pad(X_sample, pad_width, mode='constant', constant_values=0)
-        # Pad Y_sample if needed
-        if Y_sample.shape != expected_y_shape:
-            pad_width = [(0, max(0, expected_y_shape[j] - Y_sample.shape[j])) for j in range(len(expected_y_shape))]
-            Y_sample = np.pad(Y_sample, pad_width, mode='constant', constant_values=0)
+        if X_sample.shape != expected_x_shape or Y_sample.shape != expected_y_shape:
+            print(f"Skipping sample at index {i} due to shape mismatch: X {X_sample.shape}, Y {Y_sample.shape}")
+            continue
 
-        # Only append if shapes now match expected
-        if X_sample.shape == expected_x_shape and Y_sample.shape == expected_y_shape:
-            X_samples.append(X_sample)
-            Y_samples.append(Y_sample)
-            accepted_indices.append(i)
-        else:
-            print(f"Skipping sample at index {i} due to shape mismatch after padding: X {X_sample.shape}, Y {Y_sample.shape}")
+        X_samples.append(X_sample)
+        Y_samples.append(Y_sample)
+        accepted_indices.append(i)
+        
     return X_samples, Y_samples, accepted_indices
 
 
@@ -387,9 +364,9 @@ if __name__ == "__main__":
     Y_array = np.stack(Y_samples)
 
     # STConvS2S requires input and output to have same number of channels
-    # Replicate precipitation data across all 5 channels to match X_array
-    required_channels = X_array.shape[-1]  # Should be 5
-    current_channels = Y_array.shape[-1]   # Should be 1
+    # Replicate precipitation data across all channels to match X_array
+    required_channels = X_array.shape[-1]
+    current_channels = Y_array.shape[-1]
     
     if current_channels == 1 and required_channels > 1:
         # Replicate precipitation across all channels
@@ -398,7 +375,6 @@ if __name__ == "__main__":
     
     print(f"X_array shape: {X_array.shape}")
     print(f"Y_array shape: {Y_array.shape}")
-    print("STConvS2S requires matching channel dimensions between input and output")
 
     lat = combined_ds.lat.values
     lon = combined_ds.lon.values
@@ -428,12 +404,12 @@ if __name__ == "__main__":
         },
         coords={
             "sample": np.arange(len(X_samples)),
-            "time": np.arange(timestep),  # Relative time indices within each sample
+            "time": np.arange(timestep),
             "lat": lat,
             "lon": lon,
-            "channel": feature_names,  # Add feature names as channel coordinates
-            "sample_x_timestamps": (["sample", "time"], sample_x_timestamps_array),  # Actual timestamps for each X sample
-            "sample_y_timestamps": (["sample", "time"], sample_y_timestamps_array),  # Actual timestamps for each Y sample
+            "channel": feature_names,
+            "sample_x_timestamps": (["sample", "time"], sample_x_timestamps_array),
+            "sample_y_timestamps": (["sample", "time"], sample_y_timestamps_array),
         },
         attrs={
             "description": "X contains 9 meteorological feature channels, Y contains precipitation data replicated across 9 channels. "
