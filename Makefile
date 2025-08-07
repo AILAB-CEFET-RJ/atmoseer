@@ -26,6 +26,9 @@ validate-feature:
 	@echo "Validating feature '$(FEAT)' with channels $(CANAIS)"
 	PYTHONPATH=src python src/goes16/validate_features.py --feature $(FEAT) --canais $(CANAIS)
 
+plot-feature:
+	PYTHONPATH=src python src/goes16/goes16_cmi_plots.py --feature $(FEAT) --date $(DATE) --verbose
+
 # Summarize GOES-16 feature extraction log files
 analyze-logs:
 	@echo "Analyzing log files in src/goes16/features/"
