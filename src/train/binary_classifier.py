@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-import rainfall as rp
+from utils import rainfall as rp
 from train.training_utils import DeviceDataLoader
 from train.base_classifier import BaseClassifier
 

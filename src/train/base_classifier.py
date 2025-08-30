@@ -2,7 +2,6 @@ from train.base_forecaster import BaseForecaster
 import yaml
 from train.evaluate import export_confusion_matrix_to_latex
 from sklearn.metrics import classification_report
-import globals as globals
 
 class BaseClassifier(BaseForecaster):
 

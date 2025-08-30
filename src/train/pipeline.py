@@ -1,6 +1,6 @@
 import pickle
 import logging
-import globals as globals
+from config import globals
 
 def load_datasets(pipeline_id: str):
     '''

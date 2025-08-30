@@ -5,7 +5,7 @@ import numpy as np
 import os
 import random
 import matplotlib.pyplot as plt
-import globals as globals
+from config import globals
 
 def initialize_weights(m):
     if isinstance(m, nn.Conv1d):
