@@ -256,12 +256,13 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--target-path", type=str, 
-        default="./target",
+        default="./src/target",
         help="Path to the directory containing the target files"
     )
 
     parser.add_argument(
-        "--output-path", type=str, default="./src/output_dataset.nc",
+        "--output-path", type=str,
+        default="./src/output_dataset.nc",
         help="Path to save the consolidated dataset with samples"
     )
 
