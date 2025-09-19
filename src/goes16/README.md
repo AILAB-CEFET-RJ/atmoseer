@@ -187,3 +187,31 @@ These files have been modified to correctly load, preprocess, and handle the Net
 4. Follow the standard model training and evaluation workflow as described in the STConvS2S documentation.
 
 **Note:** Always keep backups of the original STConvS2S files in case you need to revert your changes.
+=======
+## Feature Validation and Logging
+
+## GOES-16 CMI Feature Plotter
+
+This script generates static plots from the NetCDF files of the extracted CMI GOES-16 features.
+
+### ⚙️ Available Features
+
+| Flag         | Feature                                                |
+|--------------|------------------------------------------------------------|
+| `pn`       | Cloud depth: difference between channels C09 and C13       |
+| `pnstd`      | Spatial texture (std) of cloud depth (PN)                  |
+| `toct`       | Cloud Top Temperature (C13 raw)                                |
+| `c07`  | Particle Size(C07 raw)
+| `fa` | Temporal derivative of upward flux (based on C13)                    |
+| `li_proxy` |  Stability proxy: difference C14 - C13  |
+| `wv_grad`   | Water vapor gradient: difference C09 - C08                 |
+| `gtn`   | Glaciation top of clouds: tri-spectral difference (C11,C14,C15) | 
+
+### How to run the plotter via Makefile
+
+The Makefile contains the following rule to run the plotter. Below is an example that generates plots for the Cloud depth feature on May 20, 2023:
+
+```bash
+make plot-feature FEAT=pn DATE=2023_05_20
+```
+After execution, the plots will be saved in `atmoseer/data/goes16/plots/<feature>/<YYYY_MM_DD>/CMI_<YYYY_MM_DD>_<HH>_<MM>.png`.

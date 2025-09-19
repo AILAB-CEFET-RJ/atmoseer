@@ -66,7 +66,7 @@ def main():
 
     if args.pn_std:
         if args.verbose: print('Feature: pn_std')
-        for pn in build_feature_paths_by_year("profundidade_nuvens"):
+        for pn in build_feature_paths_by_year("pn"):
             year = pn.parent.name
             textura_local_profundidade(str(pn), str(FEATURES_ROOT / "pn_std" / year))
 
