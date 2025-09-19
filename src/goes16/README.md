@@ -1,4 +1,4 @@
-## GOES-16 ABI Downloader and Cropper
+## 📥 GOES-16 ABI Downloader and Cropper
 
 The script `goes16_download_crop.py` allows you to:
 
@@ -8,12 +8,12 @@ The script `goes16_download_crop.py` allows you to:
 - Crop and resample data to a specific geographic bounding box
 - Save one NetCDF file per day of imagery
 
-### Usage with Makefile
+### ⚙️ Usage with Makefile
 
 You can execute the downloader/cropper using the provided `Makefile`. An example:
 
 ```bash
-make goes16-download-crop START=2024-04-14 END=2024-01-01 CHANNEL=08 DIR=./data/goes16/CMI/2024/C08
+make goes16-download-crop START=2024-01-01 END=2024-01-01 CHANNEL=08 DIR=./data/goes16/CMI/2024/C08
 ```
 
 This will create daily NetCDF files (reprojected and cropped) in:
@@ -26,17 +26,17 @@ Make sure to set up AWS CLI credentials and install dependencies like `s3fs`, `x
 
 ---
 
-## GOES-16 Feature Extractor
+## 📦 GOES-16 Feature Extractor
 
 This module provides feature engineering routines to extract physically meaningful variables from GOES-16 ABI satellite imagery. These features can be used to support precipitation nowcasting models.
 
-### Location
+### 📁 Location
 
 All scripts are contained in:
 
 ```
 src/goes16/
-├── features/                   # This folder contains one function per feature extractor
+├── features.py                  # All feature extraction functions
 ├── main_goes16_features.py     # Command-line script for feature generation
 ```
 
@@ -53,7 +53,7 @@ src/goes16/
 | `--pn_std`   | Spatial texture (std) of cloud depth (PN)                  |
 | `--verbose`  | Print progress messages by year and file count             |
 
-### How to Run
+### 🚀 How to Run
 
 Use the Makefile to extract selected features. An example:
 
@@ -62,7 +62,7 @@ make goes16-features FEATS="--pn --gtn --fa --wv_grad --li_proxy --toct --pn_std
 ```
 
 
-### Expected Input Structure
+### 📂 Expected Input Structure
 
 GOES-16 ABI data must be organized as follows:
 
@@ -87,9 +87,9 @@ C13_2020_01_01_00_10.nc
 ...
 ```
 
-### Output
+### 💾 Output
 
-Features are saved to a file following the format below:
+Features are saved to:
 
 ```
 features/CMI/{feature_name}/{year}/FEATURE_TIMESTAMP.nc
@@ -103,9 +103,7 @@ Where `feature_name` is one of the extracted variables (e.g., `temperatura_topo_
 
 You can validate whether the generated features are consistent with the source channels:
 
-```bash
 make validate-feature FEAT=pn CANAIS="C09 C13"
-```
 
 ### Log Analysis
 
@@ -113,6 +111,32 @@ Each feature module generates a `.log` file (e.g. pn.log, gtn.log, ...) in `src/
 
 To summarize warnings and errors across all logs:
 
-```bash
 make analyze-logs
+
+## Feature Validation and Logging
+
+## GOES-16 CMI Feature Plotter
+
+This script generates static plots from the NetCDF files of the extracted CMI GOES-16 features.
+
+### ⚙️ Available Features
+
+| Flag         | Feature                                                |
+|--------------|------------------------------------------------------------|
+| `pn`       | Cloud depth: difference between channels C09 and C13       |
+| `pnstd`      | Spatial texture (std) of cloud depth (PN)                  |
+| `toct`       | Cloud Top Temperature (C13 raw)                                |
+| `c07`  | Particle Size(C07 raw)
+| `fa` | Temporal derivative of upward flux (based on C13)                    |
+| `li_proxy` |  Stability proxy: difference C14 - C13  |
+| `wv_grad`   | Water vapor gradient: difference C09 - C08                 |
+| `gtn`   | Glaciation top of clouds: tri-spectral difference (C11,C14,C15) | 
+
+### How to run the plotter via Makefile
+
+The Makefile contains the following rule to run the plotter. Below is an example that generates plots for the Cloud depth feature on May 20, 2023:
+
+```bash
+make plot-feature FEAT=pn DATE=2023_05_20
 ```
+After execution, the plots will be saved in `atmoseer/data/goes16/plots/<feature>/<YYYY_MM_DD>/CMI_<YYYY_MM_DD>_<HH>_<MM>.png`.
