@@ -7,6 +7,7 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 import sys, getopt, os, re
 from PIL import Image, ImageDraw
+from config import globals
 
 def rgb_distance(c1, c2):
     return math.sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2 + (c1[2] - c2[2])**2)
@@ -42,7 +43,7 @@ def get_radar_data(station_name, met):
     
     if station_name in STATION_NAMES_FOR_RJ:
         if met:
-            df = pd.read_csv('./data/landing/'+station_name + '.csv')
+            df = pd.read_csv('./data/landing/'+station_name + '.csv') # COR
         else:
             df = pd.read_csv('./data/landing/plv/'+station_name + '.csv')
     else:
