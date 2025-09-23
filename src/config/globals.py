@@ -6,6 +6,7 @@ WS_ALERTARIO_DATA_DIR = "./data/ws/alertario/ws/"
 GS_ALERTARIO_DATA_DIR = "./data/ws/alertario/rain_gauge_era5_fused/"
 CEMADEN_DATA_DIR = ".data/ws/cemaden/"
 
+SUMARE_DATA_DIR = ".data/radar_sumare"
 # WS_GOES_DATA_DIR = "atmoseer/data/ws/goes16"
 GOES16_DATA_DIR = "./data/goes16/CMI/"
 

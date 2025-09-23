@@ -66,6 +66,7 @@ def get_dados_estacoes(codibge, email, senha, inicio=None, fim=None, codestacao=
     else:
         estacoes = get_estacoes(codibge, email, senha)
 
+    print("estações ", estacoes)
     start_date = datetime.strptime(inicio, "%Y-%m-%d") if inicio else datetime(2015, 1, 1)
     end_date = datetime.strptime(fim, "%Y-%m-%d") if fim else datetime.today()
 

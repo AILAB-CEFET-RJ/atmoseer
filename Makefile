@@ -6,6 +6,30 @@ DATA_DIR=data
 # Diretório base para o código-fonte
 SRC_DIR=src
 
+# ========== CEMADEN ========================
+cemaden_retrieve_data:
+	PYTHONPATH=src python3 src/surface_stations/retrieve_data_cemaden.py \
+	  $(if $(IBGE),--ibge $(IBGE)) \
+	  $(if $(START),--inicio $(START)) \
+	  $(if $(END),--fim $(END)) \
+	  $(if $(EMAIL),--email $(EMAIL)) \
+	  $(if $(SENHA),--senha $(SENHA)) \
+	  $(if $(ESTACAO),--estacao $(ESTACAO))
+
+cemaden_retrieve_ws:
+	PYTHONPATH=src python3 src/surface_stations/retrieve_ws_cemaden.py \
+	  $(if $(ESTADO),-e $(ESTADO)) \
+	  $(if $(IDESTACAO),-c $(IDESTACAO)) \
+	  $(if $(INICIO),-start $(INICIO)) \
+	  $(if $(FIM),-end $(FIM)) \
+	  $(if $(SAIDA),-o $(SAIDA)) \
+
+cemaden_mapa:
+	PYTHONPATH=src python3 src/surface_stations/cemaden_mapa.py 
+
+cemaden_mapa_chuva:
+	PYTHONPATH=src python3 src/surface_stations/cemaden_mapa_chuva.py
+
 # === GOES-16 Downloader/Cropper ===
 goes16-download-crop:
 	PYTHONPATH=src python src/goes16/goes16_download_crop.py \
@@ -21,13 +45,13 @@ goes16-download-crop:
 goes16-features:
 	PYTHONPATH=src python src/goes16/main_goes16_features.py $(FEATS)
 
+sumare-crop-images:
+	PYTHONPATH=src python3 src/sumare_radar/crop_image.py
+
 # Validates a GOES-16 feature based on the specified channels
 validate-feature:
 	@echo "Validating feature '$(FEAT)' with channels $(CANAIS)"
 	PYTHONPATH=src python src/goes16/validate_features.py --feature $(FEAT) --canais $(CANAIS)
-
-plot-feature:
-	PYTHONPATH=src python src/goes16/goes16_cmi_plots.py --feature $(FEAT) --date $(DATE) --verbose
 
 # Summarize GOES-16 feature extraction log files
 analyze-logs:
