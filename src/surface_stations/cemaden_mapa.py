@@ -1,5 +1,5 @@
 import requests
-from retrieve_data_cemaden import get_token
+from src.surface_stations.retrieve_ws_cemaden import get_token
 import VAR
 import folium
 url = "https://sws.cemaden.gov.br/PED/rest/pcds-cadastro/dados-cadastrais"

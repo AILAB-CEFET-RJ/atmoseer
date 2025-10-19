@@ -129,20 +129,16 @@ def get_radar_data(station_name, met):
     
 
 legend_colors = [
-    (197,0,197),  # Magenta
-    (227,6,5),    # Vermelho
-    (255,112,0),  # Laranja
-    (195,230,0),  # Amarelo
-    (4,85,4),  # Amarelo
-    (19,122,19),    # Verde escuro
-    (0,167,12),     # Verde claro
-    (0,0,0)         #Vazio
+    (197,0,197),    # Magenta
+    (227,6,5),      # Red
+    (255,112,0),    # Orange
+    (195,230,0),    # Yellow
+    (4,85,4),       # Yellow
+    (19,122,19),    # Dark Green
+    (0,167,12),     # Light Green
+    (0,0,0)         # Black
 ]
 legend_values = [50, 45, 40, 35, 30, 25, 20,0]
-
-#STATION_NAMES_FOR_RJ = ('alto_da_boa_vista', 'guaratiba', 'iraja',
-#                        'jardim_botanico', 'riocentro', 'santa_cruz',
-#                        'sao_cristovao', 'vidigal')
 
 STATION_NAMES_FOR_RJ = ('alto_da_boa_vista','guaratiba',
                         'iraja','jardim_botanico',

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import requests
 from pathlib import Path
 import folium
-from retrieve_data_cemaden import get_token
+from src.surface_stations.retrieve_ws_cemaden import get_token
 import VAR
 
 def get_estacao_posicoes(codibge="3304557"):

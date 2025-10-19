@@ -3,10 +3,13 @@ channels:
   - conda-forge
 dependencies:
   - python=3.10
+  - folium
   - gdal=3.7
+  - geopandas
   - netcdf4
   - numpy
   - pandas
+  - pyarrow
   - matplotlib
   - seaborn
   - scikit-learn

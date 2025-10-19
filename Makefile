@@ -30,6 +30,13 @@ cemaden_mapa:
 cemaden_mapa_chuva:
 	PYTHONPATH=src python3 src/surface_stations/cemaden_mapa_chuva.py
 
+inmet_retrieve_ws:
+	PYTHONPATH=src python3 src/surface_stations/retrieve_ws_inmet.py \
+	  $(if $(API_TOKEN),-t $(API_TOKEN)) \
+	  $(if $(STATION_ID),-s $(STATION_ID)) \
+	  $(if $(BEGIN_YEAR),-b $(BEGIN_YEAR)) \
+	  $(if $(END_YEAR),-e $(END_YEAR))
+
 # === GOES-16 Downloader/Cropper ===
 goes16-download-crop:
 	PYTHONPATH=src python src/goes16/goes16_download_crop.py \
@@ -72,6 +79,7 @@ gpm-download-crop:
 # === Alerta Rio Parser (placeholder) ===
 alerta-rio-process:
 	PYTHONPATH=$(SRC_DIR) python $(SRC_DIR)/surface_stations/alerta_rio_parser.py
+
 
 # === Clean Outputs ===
 clean:
