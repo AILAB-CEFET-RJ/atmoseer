@@ -6,21 +6,28 @@ dependencies:
   - folium
   - gdal=3.7
   - geopandas
+  - joblib
+  - matplotlib
   - netcdf4
   - numpy
   - pandas
+  - pillow
   - pyarrow
-  - matplotlib
+  - pyproj
   - seaborn
   - scikit-learn
   - xarray
   - rasterio
-  - pyproj
   - s3fs
+  - scipy
   - metpy
   - requests
   - ipykernel
   - pip
+  - tqdm
   - pip:
     - boto3
     - torchvision
+
+
+
