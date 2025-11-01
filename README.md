@@ -6,7 +6,8 @@ AtmoSeer is a set of Python scripts for downloading, processing, and analyzing a
 
 ## Installation
 
-### 1. Clone the Repository
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/your-org/atmoseer.git
