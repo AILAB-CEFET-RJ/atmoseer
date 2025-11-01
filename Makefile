@@ -6,7 +6,7 @@ DATA_DIR=data
 # Diretório base para o código-fonte
 SRC_DIR=src
 
-# ========== CEMADEN ========================
+# ========== Surfaces stations - CEMADEN ========================
 cemaden_retrieve_data:
 	PYTHONPATH=src python3 src/surface_stations/retrieve_data_cemaden.py \
 	  $(if $(IBGE),--ibge $(IBGE)) \
@@ -30,12 +30,23 @@ cemaden_mapa:
 cemaden_mapa_chuva:
 	PYTHONPATH=src python3 src/surface_stations/cemaden_mapa_chuva.py
 
+# ========== Surfaces stations - INMET ========================
 inmet_retrieve_ws:
 	PYTHONPATH=src python3 src/surface_stations/retrieve_ws_inmet.py \
 	  $(if $(API_TOKEN),-t $(API_TOKEN)) \
 	  $(if $(STATION_ID),-s $(STATION_ID)) \
 	  $(if $(BEGIN_YEAR),-b $(BEGIN_YEAR)) \
 	  $(if $(END_YEAR),-e $(END_YEAR))
+# Example usage:
+# make inmet_retrieve_ws API_TOKEN=your_token STATION_ID=A601 BEGIN_YEAR=2020 END_YEAR=2023
+
+surface_stations_preprocess:
+	PYTHONPATH=src python3 src/surface_stations/preprocess.py \
+	  $(if $(STATION_ID),--station_id $(STATION_ID)) \
+	  $(if $(SYSTEM),--station_system $(SYSTEM)) 
+# Example usage:
+# make surface_stations_preprocess STATION_ID=A601 SYSTEM=INMET	
+
 
 # === GOES-16 Downloader/Cropper ===
 goes16-download-crop:
@@ -46,7 +57,6 @@ goes16-download-crop:
 	  --crop_dir $(DIR) \
 	  --spatial_resolution 0.1 \
 	  --vars CMI
-
 
 # === GOES-16 Feature Extractor ===
 goes16-features:

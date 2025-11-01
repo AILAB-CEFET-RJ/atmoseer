@@ -1,0 +1,27 @@
+{
+  "column_mapping": {
+    "datetime": "datetime",
+    "temperature_mean": "temperature",
+    "humidity_mean": "relative_humidity",
+    "pressure_mean": "barometric_pressure",
+    "wind_speed_mean": "wind_speed",
+    "wind_dir_mean": "wind_dir",
+    "precipitation_sum": "precipitation"
+  },
+  "features": {
+    "add_wind_related_features": true,
+    "add_hour_related_features": true,
+    "normalize_predictors": true,
+    "impute_missing_values": true
+  },
+  "predictor_columns": [
+    "temperature",
+    "barometric_pressure",
+    "relative_humidity",
+    "wind_direction_u",
+    "wind_direction_v",
+    "hour_sin",
+    "hour_cos"
+  ],
+  "target_column": "precipitation"
+}

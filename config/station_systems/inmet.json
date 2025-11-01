@@ -1,0 +1,27 @@
+{
+  "column_mapping": {
+    "datetime": "datetime",
+    "TEM_MAX": "temperature",
+    "UMD_MAX": "relative_humidity",
+    "PRE_MAX": "barometric_pressure",
+    "VEN_VEL": "wind_speed",
+    "VEN_DIR": "wind_dir",
+    "CHUVA": "precipitation"
+  },
+  "features": {
+    "add_wind_related_features": true,
+    "add_hour_related_features": true,
+    "normalize_predictors": true,
+    "impute_missing_values": true
+  },
+  "predictor_columns": [
+    "temperature",
+    "barometric_pressure",
+    "relative_humidity",
+    "wind_direction_u",
+    "wind_direction_v",
+    "hour_sin",
+    "hour_cos"
+  ],
+  "target_column": "precipitation"
+}
