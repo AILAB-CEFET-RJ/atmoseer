@@ -8,6 +8,8 @@ backup/
 
 src/spatiotemporal_builder/.github
 
+.DS_Store
+
 src/__pycache__/globals.cpython-38.pyc
 src/__pycache__/globals.cpython-310.pyc
 src/__pycache__/util.cpython-38.pyc
