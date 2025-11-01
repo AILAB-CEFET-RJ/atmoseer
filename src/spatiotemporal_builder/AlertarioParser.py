@@ -54,9 +54,9 @@ class AlertarioParser:
 
         imputer = KNNImputer(n_neighbors=2)
         df[column] = imputer.fit_transform(df[[column]])
-        assert df[column].isna().sum() == 0, (
-            "Missing values after imputation should be zero"
-        )
+        assert (
+            df[column].isna().sum() == 0
+        ), "Missing values after imputation should be zero"
         return df
 
     def _get_df(self, file_path: Path) -> pd.DataFrame:

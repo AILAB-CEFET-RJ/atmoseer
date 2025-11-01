@@ -191,9 +191,9 @@ class CDSDatasetDownloader:
         """
         )
 
-        assert self.end_year >= prepend_end_year, (
-            "The end year must be greater than the last year of the dataset to prepend"
-        )
+        assert (
+            self.end_year >= prepend_end_year
+        ), "The end year must be greater than the last year of the dataset to prepend"
 
         print(
             f"Prepending {self.target} data {prepend_begin_year}-{prepend_end_year} to {self.begin_year}-{self.end_year}..."
@@ -271,12 +271,12 @@ def main(argv):
 
     # ERA5Land data goes back to the year 1940.
     # see https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-land?tab=overview
-    assert begin_year >= 1950, (
-        "ERA5Land start year must be greater than or equal to 1950"
-    )
-    assert begin_year <= end_year, (
-        "ERA5Land start year must be less than or equal to end year"
-    )
+    assert (
+        begin_year >= 1950
+    ), "ERA5Land start year must be greater than or equal to 1950"
+    assert (
+        begin_year <= end_year
+    ), "ERA5Land start year must be less than or equal to end year"
 
     dataset_downloader = CDSDatasetDownloader(
         begin_year=begin_year,

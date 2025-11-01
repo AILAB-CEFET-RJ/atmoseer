@@ -99,7 +99,7 @@ def main(argv):
     elif prediction_task_sufix == "bc":
         forecaster = BinaryClassifier(learner)
     elif prediction_task_sufix == "reg":
-        forecaster = Regressor(in_channels=NUM_FEATURES)#, y_mean_value=y_mean_value)
+        forecaster = Regressor(in_channels=NUM_FEATURES)  # , y_mean_value=y_mean_value)
 
     #
     # Load model.

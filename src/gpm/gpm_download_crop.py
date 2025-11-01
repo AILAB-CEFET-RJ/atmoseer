@@ -47,7 +47,6 @@ limitations under the License.
 
 """
 
-
 import argparse
 
 # try:
@@ -472,6 +471,7 @@ def open_session(usr, pwd):
     print(f"session.post: {p}")
     requests.utils.dict_from_cookiejar(session.cookies)
     return session
+
 
 def main():
     """

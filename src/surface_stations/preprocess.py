@@ -19,6 +19,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+
 def _safe_get(dct: dict, key: str, default=None):
     try:
         return dct.get(key, default)

@@ -270,12 +270,9 @@ class open_dataset:
             return
         else:
             try:
-                assert (
-                    ds.variables[parameter].dimensions
-                    != (
-                        "y",
-                        "x",
-                    )
+                assert ds.variables[parameter].dimensions != (
+                    "y",
+                    "x",
                 )  # (ds.variables[parameter].ndim == 0) or (ds.variables[parameter].ndim == 1)
             except AssertionError:
                 print("\n\tParameter is not a variable\n")
