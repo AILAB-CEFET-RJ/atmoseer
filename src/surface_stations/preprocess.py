@@ -12,6 +12,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import pandas as pd
+import numpy as np
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
@@ -137,6 +138,135 @@ def apply_imputation(df: pd.DataFrame, imputation_config: dict) -> pd.DataFrame:
     return df
 
 
+def apply_quality_checks(
+    df: pd.DataFrame,
+    quality_config: dict,
+    predictor_columns,
+    flag_suffix: str = "_flag",
+    include_flag_columns: bool = True,
+):
+    if df.empty:
+        return df, {"checks": [], "flag_columns": [], "new_columns": []}
+
+    checks = _ensure_list(_safe_get(quality_config, "checks"), default=[])
+    records = []
+    created_flag_columns = []
+    new_predictor_columns = []
+    row_count = len(df.index)
+
+    for idx, raw_check in enumerate(checks):
+        check = raw_check or {}
+        check_type = str(check.get("type", "")).lower()
+        if not check_type:
+            continue
+        columns = _ensure_list(check.get("columns"), default=predictor_columns)
+        actions = _ensure_list(check.get("actions") or check.get("strategy"), default=["flag"])
+        actions = [action.lower() for action in actions]
+        if not actions:
+            continue
+
+        # compute parameters common across columns depending on check type
+        for column in columns:
+            if column not in df.columns:
+                logging.debug(f"Quality check '{check_type}' skipped for missing column '{column}'.")
+                continue
+            series = df[column]
+            if not pd.api.types.is_numeric_dtype(series):
+                logging.debug(f"Quality check '{check_type}' skipped for non-numeric column '{column}'.")
+                continue
+
+            mask = pd.Series(False, index=df.index)
+            params_summary = {}
+
+            if check_type == "bounds":
+                min_value = check.get("min")
+                max_value = check.get("max")
+                if min_value is not None:
+                    mask |= series < min_value
+                if max_value is not None:
+                    mask |= series > max_value
+                params_summary = {"min": min_value, "max": max_value}
+            elif check_type == "iqr":
+                k = float(check.get("k", 1.5))
+                q1 = series.quantile(0.25)
+                q3 = series.quantile(0.75)
+                iqr = q3 - q1
+                if pd.isna(iqr) or iqr == 0:
+                    continue
+                lower = q1 - k * iqr
+                upper = q3 + k * iqr
+                mask = (series < lower) | (series > upper)
+                params_summary = {"k": k, "lower": lower, "upper": upper}
+            elif check_type == "zscore":
+                threshold = float(check.get("threshold", 3.0))
+                mean = series.mean()
+                std = series.std()
+                if pd.isna(std) or std == 0:
+                    continue
+                zscores = (series - mean) / std
+                mask = zscores.abs() > threshold
+                params_summary = {"threshold": threshold}
+            else:
+                logging.warning(f"Unknown quality check type '{check_type}' for column '{column}'. Skipping.")
+                continue
+
+            if not mask.any():
+                records.append({
+                    "check": check.get("name") or f"{check_type}_{idx}",
+                    "type": check_type,
+                    "column": column,
+                    "flags": 0,
+                    "fraction": 0.0,
+                    "actions": actions,
+                    "params": params_summary,
+                })
+                continue
+
+            if "clip" in actions and check_type in {"bounds", "iqr"}:
+                if "min" in params_summary and params_summary["min"] is not None:
+                    df.loc[series < params_summary["min"], column] = params_summary["min"]
+                if "max" in params_summary and params_summary["max"] is not None:
+                    df.loc[series > params_summary["max"], column] = params_summary["max"]
+                if "lower" in params_summary and params_summary["lower"] is not None:
+                    df.loc[series < params_summary["lower"], column] = params_summary["lower"]
+                if "upper" in params_summary and params_summary["upper"] is not None:
+                    df.loc[series > params_summary["upper"], column] = params_summary["upper"]
+
+            if "set_nan" in actions:
+                df.loc[mask, column] = np.nan
+
+            flag_column = None
+            if "flag" in actions:
+                flag_column = check.get("flag_column") or f"{column}{flag_suffix}"
+                if flag_column not in df.columns:
+                    df[flag_column] = False
+                df[flag_column] = df[flag_column].fillna(False).astype(bool)
+                df.loc[mask, flag_column] = True
+                df[flag_column] = df[flag_column].astype(bool)
+                created_flag_columns.append(flag_column)
+                if include_flag_columns:
+                    if flag_column not in new_predictor_columns:
+                        new_predictor_columns.append(flag_column)
+
+            records.append({
+                "check": check.get("name") or f"{check_type}_{idx}",
+                "type": check_type,
+                "column": column,
+                "flags": int(mask.sum()),
+                "fraction": float(mask.sum()) / row_count if row_count else 0.0,
+                "actions": actions,
+                "flag_column": flag_column,
+                "params": params_summary,
+            })
+
+    quality_output = {
+        "checks": records,
+        "flag_columns": list(dict.fromkeys(created_flag_columns)),
+        "new_columns": list(dict.fromkeys(new_predictor_columns)),
+    }
+    return df, quality_output
+
+
 def build_quality_report(
     station_id: str,
     station_system: str,
@@ -150,6 +280,7 @@ def build_quality_report(
     source_file: str,
     output_file: str,
     target_column: str,
+    quality_checks=None,
 ) -> dict:
     report_fields = _ensure_list(_safe_get(report_config, "fields"), default=["missing_fraction", "min", "max"])
     summary_keys = _ensure_list(_safe_get(report_config, "summary"), default=["rows", "columns", "missing_fraction"])
@@ -220,6 +351,7 @@ def build_quality_report(
         "output_file": output_file,
         "column_metrics": per_column_metrics,
         "summary": summary,
+        "quality_checks": quality_checks or [],
     }
     return report_payload
 
@@ -234,6 +366,10 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     preprocessing_settings = system_settings.get("preprocessing", {})
     scaler_config = preprocessing_settings.get("scaler", {})
     imputation_config = preprocessing_settings.get("imputation", {})
+    quality_config = system_settings.get("quality", {})
+    quality_enabled = _is_truthy(_safe_get(quality_config, "enabled", False))
+    include_flag_columns = _is_truthy(_safe_get(quality_config, "include_flag_columns", True))
+    flag_suffix = quality_config.get("flag_column_suffix", "_flag")
     report_config = system_settings.get("report", {})
     report_enabled = _is_truthy(_safe_get(report_config, "enabled", False))
     station_metadata = _safe_get(_safe_get(system_settings, "stations", {}), ws_id, {})
@@ -288,6 +424,26 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     logging.info(df.head())
     logging.info("Done!\n")
 
+    quality_summary = []
+    quality_added_predictors = []
+    if quality_enabled:
+        logging.info("Applying quality checks before feature engineering...")
+        pre_quality_columns = [column for column in predictor_names if column in df.columns]
+        df, quality_output = apply_quality_checks(
+            df=df,
+            quality_config=quality_config,
+            predictor_columns=pre_quality_columns,
+            flag_suffix=flag_suffix,
+            include_flag_columns=include_flag_columns,
+        )
+        quality_summary = quality_output.get("checks", [])
+        if include_flag_columns:
+            quality_added_predictors = [
+                column for column in quality_output.get("new_columns", [])
+                if column in df.columns
+            ]
+        logging.info("Quality checks completed.\n")
+
     #
     # Create wind-related features (U and V components of wind observations).
     if add_wind_features:
@@ -309,6 +465,10 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
         logging.info("Skipping time-related feature generation as configured.\n")
 
     available_predictors = [column for column in predictor_names if column in df.columns]
+    if include_flag_columns and quality_added_predictors:
+        for column in quality_added_predictors:
+            if column not in available_predictors:
+                available_predictors.append(column)
     missing_predictors = sorted(set(predictor_names) - set(available_predictors))
     if missing_predictors:
         logging.warning(f"The following predictors are missing and will be ignored: {missing_predictors}")
@@ -381,6 +541,7 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
             source_file=ws_filename,
             output_file=filename,
             target_column=target_name,
+            quality_checks=quality_summary,
         )
         report_filename = output_folder + filename_and_extension[0] + '_preprocess_report.json'
         with open(report_filename, 'w', encoding='utf-8') as report_file:
@@ -425,8 +586,6 @@ def main(argv):
     print(f'Preprocessing data coming from weather station {station_id} (system: {station_system.upper()})')
     ws_filename = ws_data_dir + args.station_id + ".parquet"
     preprocess_ws(ws_id=station_id, ws_filename=ws_filename, output_folder=ws_data_dir, station_system=station_system)
-
-    print('Done!')
 
 if __name__ == '__main__':
     main(sys.argv)

@@ -314,6 +314,75 @@
       "operation_start": null
     }
   },
+  "quality": {
+    "enabled": true,
+    "flag_column_suffix": "_flag",
+    "include_flag_columns": true,
+    "checks": [
+      {
+        "type": "bounds",
+        "name": "temperature_physical_limits",
+        "columns": [
+          "temperature"
+        ],
+        "min": -60,
+        "max": 60,
+        "actions": [
+          "clip",
+          "flag"
+        ]
+      },
+      {
+        "type": "bounds",
+        "name": "humidity_range",
+        "columns": [
+          "relative_humidity"
+        ],
+        "min": 0,
+        "max": 100,
+        "actions": [
+          "clip",
+          "flag"
+        ]
+      },
+      {
+        "type": "bounds",
+        "name": "wind_speed_non_negative",
+        "columns": [
+          "wind_speed"
+        ],
+        "min": 0,
+        "max": 70,
+        "actions": [
+          "clip",
+          "flag"
+        ]
+      },
+      {
+        "type": "bounds",
+        "name": "precipitation_non_negative",
+        "columns": [
+          "precipitation"
+        ],
+        "min": 0,
+        "actions": [
+          "clip",
+          "flag"
+        ]
+      },
+      {
+        "type": "zscore",
+        "name": "pressure_zscore_outlier",
+        "columns": [
+          "barometric_pressure"
+        ],
+        "threshold": 4.0,
+        "actions": [
+          "flag"
+        ]
+      }
+    ]
+  },
   "preprocessing": {
     "scaler": {
       "type": "none"
