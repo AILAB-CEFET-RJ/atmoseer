@@ -9,6 +9,7 @@ backup/
 src/spatiotemporal_builder/.github
 
 .DS_Store
+src/.DS_Store
 
 src/__pycache__/globals.cpython-38.pyc
 src/__pycache__/globals.cpython-310.pyc
@@ -24,6 +25,7 @@ src/__pycache__/util.cpython-310.pyc
 src/__pycache__/goes16_utils.cpython-310.pyc
 nohup.out
 src/__pycache__/
+src/surface_stations/__pycache__/
 *.out
 *.gif
 *.png
@@ -54,4 +56,5 @@ src/goes16/features/__pycache__/pn_std.cpython-310.pyc
 src/goes16/features/__pycache__/pn.cpython-310.pyc
 src/goes16/features/__pycache__/toct.cpython-310.pyc
 src/goes16/features/__pycache__/wv_grad.cpython-310.pyc
-__pycache__/
+src/utils/__pycache__/__init__.cpython-310.pyc
+src/utils/__pycache__/util.cpython-310.pyc
