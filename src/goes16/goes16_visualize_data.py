@@ -14,7 +14,7 @@ def visualize_goes16_file(file_path, save_path=None):
     radiance = dataset.variables["Rad"][:]
 
     # Retrieve GOES-16 projection info and coordinates
-    lat_rad = dataset.variables["goes_imager_projection"].perspective_point_height
+    dataset.variables["goes_imager_projection"].perspective_point_height
     scale_x = dataset.variables["x"].scale_factor
     offset_x = dataset.variables["x"].add_offset
     scale_y = dataset.variables["y"].scale_factor
@@ -30,15 +30,13 @@ def visualize_goes16_file(file_path, save_path=None):
     central_lon = dataset.variables[
         "goes_imager_projection"
     ].longitude_of_projection_origin
-    central_lat = dataset.variables[
-        "goes_imager_projection"
-    ].latitude_of_projection_origin
+    dataset.variables["goes_imager_projection"].latitude_of_projection_origin
 
     # Close the NetCDF file
     dataset.close()
 
     # Create a figure for plotting
-    fig = plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(12, 8))
 
     # Set up Cartopy projection
     ax = plt.axes(

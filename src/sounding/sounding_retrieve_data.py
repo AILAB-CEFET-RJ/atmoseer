@@ -26,7 +26,6 @@ from config import globals
 def get_data_for_year_and_hour_of_day(station_id, first_day, last_day, hour_of_day):
     unsuccesfull_launchs = 0
     next_day = first_day
-    nb_launchs = 0
     df_all_launchs = pd.DataFrame()
 
     while next_day <= last_day:

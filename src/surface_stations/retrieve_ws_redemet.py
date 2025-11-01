@@ -124,7 +124,7 @@ def start_data(api_key, station, start_date, end_date, output_file, log_file):
                     "Status": "Erro 429: Muitas solicitações",
                 }
                 error_log.append(log_entry)
-                retry_data.append(current_date)
+                # retry_data.append(current_date)
                 time.sleep(1800)
             else:
                 print(f"Erro na solicitação HTTP: {e}")

@@ -95,7 +95,9 @@ class WebSirenesParser:
             (
                 np.nan
                 if x == "null"
-                else float(x.replace(",", ".")) if "," in x else float(x)
+                else float(x.replace(",", "."))
+                if "," in x
+                else float(x)
             )
             for x in timeframe.strip().split()
         ]

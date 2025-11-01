@@ -1,5 +1,4 @@
 import argparse
-import datetime
 import os
 import shutil
 import time
@@ -37,7 +36,7 @@ def extract(datas_str):
             if "Server Error" not in requisicao.text:
                 json = requisicao.json()
                 if "status" in json:
-                    if json["status"] == True:
+                    if json["status"]:
                         true.append(json)
 
                     elif "error" in json:

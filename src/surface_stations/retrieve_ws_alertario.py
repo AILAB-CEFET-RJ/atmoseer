@@ -231,22 +231,6 @@ def import_data(station_name, years, months, arg_end):
     return data_aux
 
 
-def import_data(station_name, initial_year, final_year):
-    years = list(map(str, range(initial_year, final_year)))
-    months = list(range(1, 13))
-    months = [str(i).rjust(2, "0") for i in months]
-
-    if station_name == "all":
-        station_names = STATION_NAMES_FOR_RJ
-    else:
-        station_names = [station_name]
-
-    for station_name in station_names:
-        corrige_txt(station_name, years, months)
-        data = import_data(station_name, years, months, final_year)
-        del data
-
-
 def main(argv):
     station_name = ""
     default_initial_year = 1997
@@ -260,7 +244,8 @@ def main(argv):
         opts, args = getopt.getopt(
             argv[1:], "hs:a:b:e:", ["help", "station=", "begin=", "end="]
         )
-    except:
+    except getopt.GetoptError as err:
+        print(err)
         print(arg_help)
         sys.exit(2)
 

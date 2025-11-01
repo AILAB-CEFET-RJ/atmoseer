@@ -43,9 +43,9 @@ class BaseNeuralNet(nn.Module, BaseLearner):
 
                 # calculate the loss
                 loss = criterion(output, target.float())
-                assert not (
-                    np.isnan(loss.item()) or loss.item() > 1e6
-                ), f"Loss explosion: {loss.item()}"
+                assert not (np.isnan(loss.item()) or loss.item() > 1e6), (
+                    f"Loss explosion: {loss.item()}"
+                )
 
                 # see https://discuss.pytorch.org/t/per-class-and-per-sample-weighting/25530
                 loss = loss * sample_weights

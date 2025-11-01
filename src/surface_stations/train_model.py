@@ -117,9 +117,7 @@ def train(
         loss = nn.MSELoss()
         y_train = rp.value_to_ordinal_encoding(y_train)
         y_val = rp.value_to_ordinal_encoding(y_val)
-        target_average = torch.mean(
-            torch.tensor(y_train, dtype=torch.float32), dim=0, keepdim=True
-        )
+        torch.mean(torch.tensor(y_train, dtype=torch.float32), dim=0, keepdim=True)
     elif forecasting_task_sufix == "bc":
         print("- Forecasting task: binary classification.")
         train_weights = compute_weights_for_binary_classification(y_train)

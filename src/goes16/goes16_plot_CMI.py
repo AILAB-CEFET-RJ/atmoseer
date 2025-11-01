@@ -5,7 +5,7 @@
 # Required modules
 import os  # Miscellaneous operating system interfaces
 from datetime import (  # Basic Dates and time types
-    date,
+    # date,
     datetime,  # Basic Dates and time types
     timedelta,
 )
@@ -14,6 +14,7 @@ import cartopy
 import cartopy.crs as ccrs  # Plot maps
 import cartopy.feature as cfeature  # Cartopy features
 import cartopy.io.shapereader as shpreader  # Import shapefiles
+import matplotlib
 import matplotlib.pyplot as plt  # Plotting library
 import numpy as np  # Scientific computing with Python
 from goes16_utils import (
@@ -52,7 +53,6 @@ date_loop = date_ini
 
 # -----------------------------------------------------------------------------------------------------------
 # NDVI colormap creation
-import matplotlib
 
 colors = [
     "#8f2723",
@@ -195,7 +195,7 @@ while date_loop <= date_end:
     # -----------------------------------------------------------------------------------------------------------
 
     # If it's the first iteration, create the array that will store the max values
-    if first == True:
+    if first:
         first = False
         ndvi_max = np.full((data_ch02.shape[0], data_ch02.shape[1]), -9999)
 

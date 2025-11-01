@@ -76,7 +76,7 @@ def build_datasets(
 
     df = df[df.index.month.isin([9, 10, 11, 12, 1, 2, 3, 4, 5])]
 
-    min_timestamp, max_timestamp = df.index.min(), df.index.max()
+    _min_timestamp, _max_timestamp = df.index.min(), df.index.max()
 
     os.makedirs(globals.DATASETS_DIR, exist_ok=True)
     filename_base = globals.DATASETS_DIR + f"{station_id}"

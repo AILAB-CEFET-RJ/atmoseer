@@ -8,8 +8,6 @@ import pandas as pd
 import pyarrow.parquet as pq
 import xarray as xr
 
-# from src.utils.util import *
-
 station_ids_for_goes16 = {
     "A652": {"latitude": -22.98833333, "longitude": -43.19055555},
     "A636": {"latitude": -22.93999999, "longitude": -43.40277777},
@@ -87,8 +85,8 @@ def read_and_process_files(files, station_id, g16_pre_process_data_file):
             g16_pre_process_data_file["Datetime"].extend(df["event_time_offset"])
             g16_pre_process_data_file["event_energy"].extend(df["event_energy"])
             ds.close()
-        except:
-            pass
+        except Exception as e:
+            print(f"Error processing file {g16_data}: {e}")
 
     return g16_pre_process_data_file
 

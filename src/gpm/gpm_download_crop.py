@@ -47,19 +47,20 @@ limitations under the License.
 
 """
 
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    pass
+
 import argparse
 
+# try:
+#     import xml.etree.cElementTree as ET
+# except ImportError as e:
+#     print(f"Pass a password as input or set the GPMPWD variable: {e}")
 # from util import set_log, check_mdt, print_summary
 import logging
 import os
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import dateutil.parser
 import numpy as np
@@ -90,7 +91,7 @@ def set_log(name, fname, level):
     # start a logger
     logger = logging.getLogger(name)
     # set a formatter to manage the output format of our handler
-    formatter = logging.Formatter("%(asctime)s | %(message)s", "%H:%M:%S")
+    logging.Formatter("%(asctime)s | %(message)s", "%H:%M:%S")
     minimal = logging.Formatter("%(message)s")
     if level == "debug":
         minimal = logging.Formatter("%(levelname)s: %(message)s")
@@ -151,8 +152,6 @@ def print_summary(updated, new, error, logger):
     for f in error:
         logger.info(f"{f}")
     logger.info("\n\n")
-
-
 
 
 def parse_input():
@@ -471,12 +470,8 @@ def open_session(usr, pwd):
     session = requests.session()
     p = session.post("http://urs.earthdata.nasa.gov", {"user": usr, "password": pwd})
     print(f"session.post: {p}")
-    cookies = requests.utils.dict_from_cookiejar(session.cookies)
+    requests.utils.dict_from_cookiejar(session.cookies)
     return session
-
-
-from datetime import timedelta
-
 
 def main():
     """
@@ -531,8 +526,8 @@ def main():
         pwd = args["pwd"]
         if pwd is None:
             pwd = os.getenv("GPMPWD")
-    except:
-        print("Pass a password as input or set the GPMPWD variable")
+    except KeyError as e:
+        print(f"Pass a password as input or set the GPMPWD variable: {e}")
 
     today = datetime.today().strftime("%Y-%m-%d")
     sys_user = os.getenv("USER")

@@ -270,9 +270,12 @@ class open_dataset:
             return
         else:
             try:
-                assert ds.variables[parameter].dimensions != (
-                    "y",
-                    "x",
+                assert (
+                    ds.variables[parameter].dimensions
+                    != (
+                        "y",
+                        "x",
+                    )
                 )  # (ds.variables[parameter].ndim == 0) or (ds.variables[parameter].ndim == 1)
             except AssertionError:
                 print("\n\tParameter is not a variable\n")
@@ -280,7 +283,7 @@ class open_dataset:
             else:
                 parameter = ds.variables[parameter]
                 fmt = parameter[:].dtype
-                data = np.where(parameter[:].mask == True, np.nan, parameter[:].data)
+                data = np.where(parameter[:].mask, np.nan, parameter[:].data)
                 IsDateTime = False
 
                 if "units" in parameter.ncattrs():
@@ -333,7 +336,7 @@ class open_dataset:
                 for key in parameter.__dict__.keys():
                     dict.update({key: getattr(parameter, key)})
 
-                if IsDateTime == True:
+                if IsDateTime:
                     if "units" in dict:
                         del dict["units"]
 
@@ -673,7 +676,7 @@ class open_dataset:
 
                 # ------------------------------------------------------------------
 
-                if up_level == True:
+                if up_level:
                     try:
                         assert ProcessingLevel == "L1b"
                     except AssertionError:
@@ -735,7 +738,7 @@ class open_dataset:
 
                 if lonlat == "center":
                     Field = np.where(
-                        (Field[:].mask == True) | (Lons.data == -999.99),
+                        (Field[:].mask) | (Lons.data == -999.99),
                         np.nan,
                         Field[:],
                     )
@@ -745,9 +748,7 @@ class open_dataset:
                 elif lonlat == "corner":
                     mask = np.where(Lons.data < -990.0, True, False)
                     mask = corner_size_to_center_size(mask)
-                    Field = np.where(
-                        (Field[:].mask == True) | (mask == True), np.nan, Field[:]
-                    )
+                    Field = np.where((Field[:].mask) | (mask), np.nan, Field[:])
                     Field = np.ascontiguousarray(Field, dtype=fmt)
                     dict_Field["data"] = Field
                     return GOES(dict_Field), dict_Lons, dict_Lats
@@ -755,7 +756,7 @@ class open_dataset:
                     if isinstance(nan_mask, np.ndarray):
                         if Field[:].size == nan_mask.size:
                             Field = np.where(
-                                (Field[:].mask == True) | (nan_mask == True),
+                                (Field[:].mask) | (nan_mask),
                                 np.nan,
                                 Field[:],
                             )
@@ -763,9 +764,9 @@ class open_dataset:
                             print(
                                 "The size of the nan_mask does not match the size of the returned image. Masking will not be done."
                             )
-                            Field = np.where((Field[:].mask == True), np.nan, Field[:])
+                            Field = np.where((Field[:].mask), np.nan, Field[:])
                     else:
-                        Field = np.where((Field[:].mask == True), np.nan, Field[:])
+                        Field = np.where((Field[:].mask), np.nan, Field[:])
 
                     Field = np.ascontiguousarray(Field, dtype=fmt)
                     dict_Field["data"] = Field
@@ -821,8 +822,8 @@ class open_dataset:
                     "   {:50} {} {}".format(item, size, ds.variables[item].dtype)
                 )
 
-        for item in ds.groups.keys():
-            groups.append("   {:50}".format(item))
+        # for item in ds.groups.keys():
+        #     groups.append("   {:50}".format(item))
 
         return "\n".join(
             [str(self.__class__)]
@@ -891,7 +892,7 @@ class open_dataset:
                 )
 
         for item in ds.groups.keys():
-            groups.append("   {:50}".format(item))
+            group.append("   {:50}".format(item))
 
         return "\n".join(
             [str(self.__class__)]
@@ -961,8 +962,8 @@ class open_mfdataset:
             ds = self.ds[idx]
             try:
                 assert parameter in ds.ncattrs()
-            except AssertionError:
-                print("\n\tParameter not found, check if it is an attribute\n")
+            except AssertionError as Error:
+                print(f"\n\tParameter not found, check if it is an attribute\n{Error}")
                 return
             else:
                 mfparameter.append(getattr(ds, parameter))
@@ -1068,9 +1069,7 @@ class open_mfdataset:
                 else:
                     mfparameter = ds.variables[parameter]
                     fmt = mfparameter[:].dtype
-                    data = np.where(
-                        mfparameter[:].mask == True, np.nan, mfparameter[:].data
-                    )
+                    data = np.where(mfparameter[:].mask, np.nan, mfparameter[:].data)
                     IsDateTime = False
 
                     if "units" in mfparameter.ncattrs():
@@ -1134,7 +1133,7 @@ class open_mfdataset:
         for key in mfparameter.__dict__.keys():
             dict.update({key: getattr(mfparameter, key)})
 
-        if IsDateTime == True:
+        if IsDateTime:
             if "units" in dict:
                 del dict["units"]
 
@@ -1222,8 +1221,8 @@ class open_mfdataset:
                     "   {:50} {} {}".format(item, size, ds.variables[item].dtype)
                 )
 
-        for item in ds.groups.keys():
-            groups.append("   {:50}".format(item))
+        # for item in ds.groups.keys():
+        #     groups.append("   {:50}".format(item))
 
         return "\n".join(
             [str(self.__class__)]
@@ -1294,8 +1293,8 @@ class open_mfdataset:
                     "   {:50} {} {}".format(item, size, ds.variables[item].dtype)
                 )
 
-        for item in ds.groups.keys():
-            groups.append("   {:50}".format(item))
+        # for item in ds.groups.keys():
+        #     groups.append("   {:50}".format(item))
 
         return "\n".join(
             [str(self.__class__)]
@@ -1668,8 +1667,8 @@ def calculate_corners(Lons, Lats, fmt=np.float32):
     """
 
     try:
-        assert (isinstance(Lons, GOES) == isinstance(Lats, GOES) == True) or (
-            isinstance(Lons, np.ndarray) == isinstance(Lats, np.ndarray) == True
+        assert (isinstance(Lons, GOES) == isinstance(Lats, GOES) is True) or (
+            isinstance(Lons, np.ndarray) == isinstance(Lats, np.ndarray) is True
         )
     except AssertionError:
         print("\nLons and Lats must be GOES class or numpy.ndarray\n")
@@ -1744,8 +1743,8 @@ def find_pixel_of_coordinate(Lons, Lats, LonCoord, LatCoord):
     """
 
     try:
-        assert (isinstance(Lons, GOES) == isinstance(Lats, GOES) == True) or (
-            isinstance(Lons, np.ndarray) == isinstance(Lats, np.ndarray) == True
+        assert (isinstance(Lons, GOES) == isinstance(Lats, GOES) is True) or (
+            isinstance(Lons, np.ndarray) == isinstance(Lats, np.ndarray) is True
         )
     except AssertionError:
         print("\nLons and Lats must be GOES class or numpy.ndarray\n")
@@ -1794,8 +1793,8 @@ def cosine_of_solar_zenith_angle(Lons, Lats, DateTime, MinCosTheta=0.0, fmt=np.f
     """
 
     try:
-        assert (isinstance(Lons, GOES) == isinstance(Lats, GOES) == True) or (
-            isinstance(Lons, np.ndarray) == isinstance(Lats, np.ndarray) == True
+        assert (isinstance(Lons, GOES) == isinstance(Lats, GOES) is True) or (
+            isinstance(Lons, np.ndarray) == isinstance(Lats, np.ndarray) is True
         )
     except AssertionError:
         print("\nLons and Lats must be GOES class or numpy.ndarray\n")
@@ -1920,8 +1919,8 @@ def find_pixels_of_region(Lons, Lats, LLLon, URLon, LLLat, URLat):
     """
 
     try:
-        assert (isinstance(Lons, GOES) == isinstance(Lats, GOES) == True) or (
-            isinstance(Lons, np.ndarray) == isinstance(Lats, np.ndarray) == True
+        assert (isinstance(Lons, GOES) == isinstance(Lats, GOES) is True) or (
+            isinstance(Lons, np.ndarray) == isinstance(Lats, np.ndarray) is True
         )
     except AssertionError:
         print("\nLons and Lats must be GOES class or numpy.ndarray\n")
@@ -1936,7 +1935,7 @@ def find_pixels_of_region(Lons, Lats, LLLon, URLon, LLLat, URLat):
             True,
             False,
         )
-        yx = np.argwhere(Mask == True)
+        yx = np.argwhere(Mask)
         ypixmin, ypixmax = np.min(yx[:, 0]), np.max(yx[:, 0])
         xpixmin, xpixmax = np.min(yx[:, 1]), np.max(yx[:, 1])
 
@@ -2065,11 +2064,11 @@ def locate_files(
         if isinstance(datetime_fin, str) and len(datetime_fin) == 15:
             datetime_fin = datetime.datetime.strptime(datetime_fin, "%Y%m%d-%H%M%S")
 
-        l = sorted(glob.glob(path + prefix))
+        files = sorted(glob.glob(path + prefix))
 
         if use_parameter == "scan_start_time":
             ini_datetime = []
-            for file in l:
+            for file in files:
                 datetimestr = file[file.find("_s") + 2 : file.find("_e")]
                 ini_datetime.append(
                     datetime.datetime.strptime(datetimestr, "%Y%j%H%M%S%f")
@@ -2081,11 +2080,11 @@ def locate_files(
                 True,
                 False,
             )
-            l = np.array(l)
+            files = np.array(files)
 
         elif use_parameter == "scan_end_time":
             fin_datetime = []
-            for file in l:
+            for file in files:
                 datetimestr = file[file.find("_e") + 2 : file.find("_c")]
                 fin_datetime.append(
                     datetime.datetime.strptime(datetimestr, "%Y%j%H%M%S%f")
@@ -2097,12 +2096,12 @@ def locate_files(
                 True,
                 False,
             )
-            l = np.array(l)
+            files = np.array(files)
 
         elif use_parameter == "both":
             ini_datetime = []
             fin_datetime = []
-            for file in l:
+            for file in files:
                 datetimestr = file[file.find("_s") + 2 : file.find("_e")]
                 ini_datetime.append(
                     datetime.datetime.strptime(datetimestr, "%Y%j%H%M%S%f")
@@ -2120,9 +2119,9 @@ def locate_files(
                 True,
                 False,
             )
-            l = np.array(l)
+            files = np.array(files)
 
-        return list(l[mask == True])
+        return list(files[mask])
 
 
 # -----------------------------------------------------------------------------------------------------------------------------------
@@ -2238,7 +2237,7 @@ def accumulate_in_gridmap(
                     LongName = "Accumulated occurrences in the gridmap"
                     StandardName = "Accumulated occurrences"
 
-                if isinstance(Lons, GOES) == True and isinstance(Lats, GOES) == True:
+                if isinstance(Lons, GOES) and isinstance(Lats, GOES):
                     Lons = Lons.data
                     Lats = Lats.data
 
@@ -2265,10 +2264,10 @@ def accumulate_in_gridmap(
                     True,
                     False,
                 )
-                Ltng_Lon = np.delete(Ltng_Lon, np.where(Mask == False))
-                Ltng_Lat = np.delete(Ltng_Lat, np.where(Mask == False))
-                Ltng_Par = np.delete(Ltng_Par, np.where(Mask == False))
-                if show_progress == True:
+                Ltng_Lon = np.delete(Ltng_Lon, np.where(not Mask))
+                Ltng_Lat = np.delete(Ltng_Lat, np.where(not Mask))
+                Ltng_Par = np.delete(Ltng_Par, np.where(not Mask))
+                if show_progress:
                     print(
                         "    There are {:.0f} occurrences inside gridmap".format(
                             Ltng_Lon.shape[0]
@@ -2314,9 +2313,9 @@ def accumulate_in_gridmap(
                                 True,
                                 False,
                             )
-                            Ltng_Lon2 = np.delete(Ltng_Lon, np.where(Mask == False))
-                            Ltng_Lat2 = np.delete(Ltng_Lat, np.where(Mask == False))
-                            Ltng_Par2 = np.delete(Ltng_Par, np.where(Mask == False))
+                            Ltng_Lon2 = np.delete(Ltng_Lon, np.where(not Mask))
+                            Ltng_Lat2 = np.delete(Ltng_Lat, np.where(not Mask))
+                            Ltng_Par2 = np.delete(Ltng_Par, np.where(not Mask))
 
                             if Ltng_Lon2.shape[0] > 0:
                                 zsize = Ltng_Lon2.shape[0]
@@ -2353,7 +2352,7 @@ def accumulate_in_gridmap(
                                     )
 
                             Slide = Slide + 1
-                            if show_progress == True:
+                            if show_progress:
                                 print(
                                     "    processing {:3.0f}%".format(
                                         100.0 * (Slide) / NSlides

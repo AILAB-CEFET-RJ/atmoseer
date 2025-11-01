@@ -26,8 +26,8 @@ from osgeo import (
 def loadCPT(path):
     try:
         f = open(path)
-    except:
-        print("File ", path, "not found")
+    except FileNotFoundError as e:
+        print(f"File {path} not found: {e}")
         return None
 
     lines = f.readlines()
@@ -41,9 +41,9 @@ def loadCPT(path):
 
     colorModel = "RGB"
 
-    for l in lines:
-        ls = l.split()
-        if l[0] == "#":
+    for line in lines:
+        ls = line.split()
+        if line[0] == "#":
             if ls[-1] == "HSV":
                 colorModel = "HSV"
                 continue
@@ -258,7 +258,6 @@ def latlon2xy(lat, lon):
     # goes_imagery_projection:semi_major_axis
     req = 6378137  # meters
     #  goes_imagery_projection:inverse_flattening
-    invf = 298.257222096
     # goes_imagery_projection:semi_minor_axis
     rpol = 6356752.31414  # meters
     e = 0.0818191910435
@@ -294,7 +293,6 @@ def convertExtent2GOESProjection(extent):
     # GOES-16 viewing point (satellite position) height above the earth
     GOES16_HEIGHT = 35786023.0
     # GOES-16 longitude position
-    GOES16_LONGITUDE = -75.0
 
     a, b = latlon2xy(extent[1], extent[0])
     c, d = latlon2xy(extent[3], extent[2])

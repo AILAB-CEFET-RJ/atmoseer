@@ -36,7 +36,7 @@ def apply_naive_subsampling(X, y):
         size=y.shape[0],
         p=[NAIVE_SUBSAMPLING_KEEP_RATIO, 1.0 - NAIVE_SUBSAMPLING_KEEP_RATIO],
     )
-    y_train_subsample_idxs = np.where(mask == True)[0]
+    y_train_subsample_idxs = np.where(mask)[0]
 
     logging.info(f" - Subsample (total) size: {y_train_subsample_idxs.shape[0]}")
     idxs = np.intersect1d(y_eq_zero_idxs, y_train_subsample_idxs)

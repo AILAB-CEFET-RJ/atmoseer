@@ -49,7 +49,7 @@ def download_weather_data(uf, id_station, start_date, end_date, output_file, log
         current_datetime += dt.timedelta(hours=1)
 
     end_time = time.time()
-    total_time = end_time - start_time
+    end_time - start_time
 
     final_df = pd.concat(dataframes, ignore_index=True)
     final_df.to_csv(output_file, index=False)

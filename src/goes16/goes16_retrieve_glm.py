@@ -166,7 +166,6 @@ def aggregate_daily_files(
         for key in data:
             latitude = data[key]["latitude"]
             longitude = data[key]["longitude"]
-            shape = (94, 121)
             grid = create_grid_spatial_resolution(
                 lon_min,
                 lon_max,
@@ -275,15 +274,15 @@ def main(argv):
     end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
     spatial_resolution = args.spatial_resolution
 
-    assert (
-        start_date <= end_date
-    ), "Start date must be earlier than or equal to end date."
+    assert start_date <= end_date, (
+        "Start date must be earlier than or equal to end date."
+    )
 
     ignored_months = set(args.ignored_months)
     for month in ignored_months:
-        assert (
-            1 <= month <= 12
-        ), f"Invalid month: {month}. Months should be between 1 and 12."
+        assert 1 <= month <= 12, (
+            f"Invalid month: {month}. Months should be between 1 and 12."
+        )
 
     logging.info(
         f"Starting download from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"

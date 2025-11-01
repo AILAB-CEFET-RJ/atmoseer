@@ -128,7 +128,6 @@ def latlon2xy(lat, lon):
     # goes_imagery_projection:semi_major_axis
     req = 6378137  # meters
     #  goes_imagery_projection:inverse_flattening
-    invf = 298.257222096
     # goes_imagery_projection:semi_minor_axis
     rpol = 6356752.31414  # meters
     e = 0.0818191910435
@@ -164,7 +163,6 @@ def convertExtent2GOESProjection(extent):
     # GOES-16 viewing point (satellite position) height above the earth
     GOES16_HEIGHT = 35786023.0
     # GOES-16 longitude position
-    GOES16_LONGITUDE = -75.0
 
     a, b = latlon2xy(extent[1], extent[0])
     c, d = latlon2xy(extent[3], extent[2])
@@ -200,7 +198,7 @@ def create_snapshot_with_overlay(data, overlay_data, title, output_image_file):
     img_extent = convertExtent2GOESProjection(globals.extent)
 
     # Plot the main data array
-    img = ax.imshow(data, origin="upper", extent=img_extent, cmap="viridis")
+    ax.imshow(data, origin="upper", extent=img_extent, cmap="viridis")
 
     # Add coastlines
     ax.coastlines(resolution="10m", color="black", linewidth=1)

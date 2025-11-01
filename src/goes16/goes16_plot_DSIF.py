@@ -35,7 +35,7 @@ def plot_data_for_this_timestamp(
 ):
     # -----------------------------------------------------------------------------------------------------------
     # Open the reprojected GOES-R image
-    file_reprojected = Dataset(filename_reprojected)
+    Dataset(filename_reprojected)
 
     #  Read file netcdf with estimated rain from GOES-16
     sat_data = gdal.Open(f"{filename_reprojected}")
@@ -141,7 +141,7 @@ def plot_data_for_this_timestamp(
     # Add coastlines, borders and gridlines
     ax.coastlines(resolution="10m", color="black", linewidth=0.8)
     ax.add_feature(cartopy.feature.BORDERS, edgecolor="black", linewidth=0.5)
-    gl = ax.gridlines(
+    ax.gridlines(
         crs=ccrs.PlateCarree(),
         color="gray",
         alpha=1.0,
@@ -165,7 +165,7 @@ def plot_data_for_this_timestamp(
     )
 
     # Extract date
-    date = datetime.strptime(dtime, "%Y-%m-%dT%H:%M:%S.%fZ")
+    datetime.strptime(dtime, "%Y-%m-%dT%H:%M:%S.%fZ")
 
     # Add a title
     plt.title(f"G-16-DSIF {index_name}", fontweight="bold", fontsize=10, loc="left")
@@ -228,7 +228,7 @@ def main(argv):
     date_ini = str(datetime(int(yyyy), int(mm), int(dd), 12, 0) - timedelta(hours=12))
     date_end = str(datetime(int(yyyy), int(mm), int(dd), 12, 0) + timedelta(hours=12))
 
-    acum = np.zeros((1086, 1086))
+    np.zeros((1086, 1086))
 
     columns = [
         "datetime",

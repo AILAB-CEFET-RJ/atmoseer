@@ -378,9 +378,9 @@ class SpatioTemporalFeatures:
         # the corner cell is processed twice, is the common point between the last row and the last column
         processed -= 1
         total_squares = len(top_down_lats) * len(left_right_lons)
-        assert (
-            processed == total_squares
-        ), "Not all cells processed failed to include last row and last column"
+        assert processed == total_squares, (
+            "Not all cells processed failed to include last row and last column"
+        )
 
     def _process_timestamp(self, timestamp: pd.Timestamp):
         year = timestamp.year
@@ -590,19 +590,19 @@ class SpatioTemporalFeatures:
                 continue
 
             features = np.load(file)
-            assert features.shape[0] == len(
-                self.sorted_latitudes_ascending
-            ), f"shape[0] should be {len(self.sorted_latitudes_ascending)} but is {features.shape[0]}"
-            assert features.shape[1] == len(
-                self.sorted_longitudes_ascending
-            ), f"shape[1] should be {len(self.sorted_longitudes_ascending)} but is {features.shape[1]}"
-            assert features.shape[2] == len(
-                self.features_tuple
-            ), f"shape[2] should be {len(self.features_tuple)} but is {features.shape[2]}"
+            assert features.shape[0] == len(self.sorted_latitudes_ascending), (
+                f"shape[0] should be {len(self.sorted_latitudes_ascending)} but is {features.shape[0]}"
+            )
+            assert features.shape[1] == len(self.sorted_longitudes_ascending), (
+                f"shape[1] should be {len(self.sorted_longitudes_ascending)} but is {features.shape[1]}"
+            )
+            assert features.shape[2] == len(self.features_tuple), (
+                f"shape[2] should be {len(self.features_tuple)} but is {features.shape[2]}"
+            )
 
-            assert np.all(
-                np.any(features != 0, axis=(1, 2))
-            ), f"Should not have one row with all values as zero for {file}"
+            assert np.all(np.any(features != 0, axis=(1, 2))), (
+                f"Should not have one row with all values as zero for {file}"
+            )
 
             total_files += 1
 
@@ -610,9 +610,9 @@ class SpatioTemporalFeatures:
             log.error(f"Missing timestamps: {not_found}")
             exit(1)
 
-        assert (
-            total_files == total_timestamps
-        ), "Mismatch between timestamps and files (ignoring specific months)"
+        assert total_files == total_timestamps, (
+            "Mismatch between timestamps and files (ignoring specific months)"
+        )
 
         log.success(
             f"""All timestamps found in target directory:

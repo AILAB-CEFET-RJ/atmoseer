@@ -173,6 +173,6 @@ def parameter_parser():
 if __name__ == "__main__":
     args = parameter_parser()
 
-    raio = args.radius if args.radius != None else 1
+    raio = args.radius if args.radius is not None else 1
     raio = int(raio)
     processing(raio)

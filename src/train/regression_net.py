@@ -1,10 +1,11 @@
+import sklearn.metrics as skl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import TensorDataset
 
-from train.evaluate import *
-from train.training_utils import *
+from train.evaluate import accuracy, export_results_to_latex, mean_bias_error
+from train.training_utils import DeviceDataLoader, get_default_device
 
 
 class Regressor(nn.Module):
@@ -131,7 +132,6 @@ class Regressor(nn.Module):
         test_loader = torch.utils.data.DataLoader(test_ds, batch_size=32, shuffle=False)
         test_loader = DeviceDataLoader(test_loader, get_default_device())
 
-        test_losses = []
         outputs = []
         with torch.no_grad():
             for xb, yb in test_loader:

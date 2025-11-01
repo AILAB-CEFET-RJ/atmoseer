@@ -241,7 +241,7 @@ def main(argv):
         # Ignore winter months
         if current_datetime.month not in [6, 7, 8]:
             yyyymmdd = current_datetime.strftime("%Y%m%d")
-            df = download_data_for_a_day(
+            download_data_for_a_day(
                 extent,
                 dest_path,
                 yyyymmdd,

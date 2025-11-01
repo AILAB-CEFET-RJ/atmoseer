@@ -10,7 +10,7 @@ Modification date: Jul 23, 2023
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 import os
-from datetime import *
+from datetime import datetime, timedelta
 
 import numpy as np
 import requests
@@ -115,9 +115,9 @@ def download_file(
 
     make_download = True
 
-    if os.path.isfile(path_out + name_file) == True:
+    if os.path.isfile(path_out + name_file):
         if os.path.getsize(path_out + name_file) == total_size:
-            if overwrite_file == False:
+            if not overwrite_file:
                 print("  {} already exists.".format(name_file))
                 make_download = False
             else:
@@ -126,13 +126,13 @@ def download_file(
         else:
             make_download = True
 
-    if make_download == True:
+    if make_download:
         with open(path_out + name_file, "wb") as output_file:
             for chunk in req.iter_content(chunk_size=1024):
                 if chunk:
                     rec_size = output_file.write(chunk)
                     size = rec_size + size
-                    if show_download_progress == True:
+                    if show_download_progress:
                         print(
                             "  {} {:3.0f}% {:.1f}MB {}".format(
                                 name_file,
@@ -302,11 +302,11 @@ def download(
         return
     else:
         if Satellite == "goes16":
-            Sat = "G16"
+            pass
         elif Satellite == "goes17":
-            Sat = "G17"
+            pass
         elif Satellite == "goes18":
-            Sat = "G18"
+            pass
 
     # ---------- Product and Domain -------------------
     if Product[-1] == "M":
@@ -327,7 +327,7 @@ def download(
 
     # ---------- DateTimeIni -------------------
     try:
-        assert DateTimeIni != None
+        assert DateTimeIni is not None
     except AssertionError:
         print("\nYou must define initial DateTimeIni\n")
         return
@@ -335,7 +335,7 @@ def download(
         DateTimeIni = datetime.strptime(DateTimeIni, "%Y%m%d-%H%M%S")
 
     # ---------- DateTimeFin -------------------
-    if DateTimeFin == None:
+    if DateTimeFin is None:
         DateTimeFin = DateTimeIni
     else:
         DateTimeFin = datetime.strptime(DateTimeFin, "%Y%m%d-%H%M%S")
@@ -344,13 +344,13 @@ def download(
 
     if Product[:-1] in ["ABI-L1b-Rad", "ABI-L2-CMIP"]:
         try:
-            assert channel != None
+            assert channel is not None
         except AssertionError:
             print("\nYou must define channel or channels\n")
             return
         else:
             try:
-                assert isinstance(channel, list) == True
+                assert isinstance(channel, list)
             except AssertionError:
                 print("\nChannel must be a list\n")
                 return
@@ -358,7 +358,7 @@ def download(
                 ChannelList = []
                 for item in channel:
                     try:
-                        assert isinstance(item, str) == True
+                        assert isinstance(item, str)
                     except AssertionError:
                         print("\nEach elements of channel must have string format\n")
                         return
@@ -384,7 +384,7 @@ def download(
     # """
     Downloaded_files = []
 
-    if show_download_progress == True:
+    if show_download_progress:
         print("Files:")
 
     # ---------- Loop -------------------
@@ -411,7 +411,7 @@ def download(
                     and ChannelFile in ChannelList
                     and DateTimeIni <= DateTimeFile <= DateTimeFin
                 ):
-                    if rename_fmt == False:
+                    if not rename_fmt:
                         NameOut = NameFile
                     else:
                         NameOut = (
@@ -444,7 +444,7 @@ def download(
                 )
 
                 if Product2 in NameFile and DateTimeIni <= DateTimeFile <= DateTimeFin:
-                    if rename_fmt == False:
+                    if not rename_fmt:
                         NameOut = NameFile
                     else:
                         NameOut = (

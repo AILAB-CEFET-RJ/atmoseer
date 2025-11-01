@@ -1,4 +1,5 @@
 import os  # Miscellaneous operating system interfaces
+import sys
 from datetime import datetime, timedelta  # Basic Dates and time types
 
 import numpy as np  # Scientific computing with Python
@@ -36,8 +37,6 @@ def get_rrqpe_value(sat_data):
     return sat_array[x, y]
 
 
-import sys
-
 gdal.PushErrorHandler("CPLQuietErrorHandler")  # Ignore GDAL warnings
 
 
@@ -55,8 +54,6 @@ def download_data_for_a_day(yyyymmdd):
     os.makedirs(input, exist_ok=True)
     output = "./data/goes16/Output"
     os.makedirs(output, exist_ok=True)
-
-    extent = [-44.0, -23.0, -43.0, -22.0]  # Min lon, Min lat, Max lon, Max lat
 
     # Initial time and date
     yyyy = datetime.strptime(yyyymmdd, "%Y%m%d").strftime("%Y")
@@ -91,7 +88,7 @@ def download_data_for_a_day(yyyymmdd):
 
         # Open the file
         img = gdal.Open(f"NETCDF:{input}/{file_name}.nc:" + var)
-        dqf = gdal.Open(f"NETCDF:{input}/{file_name}.nc:DQF")
+        gdal.Open(f"NETCDF:{input}/{file_name}.nc:DQF")
 
         if img is not None:
             ds = open_dataset(f"{input}/{file_name}.nc")
@@ -114,14 +111,14 @@ def download_data_for_a_day(yyyymmdd):
             x, y = find_pixel_of_coordinate(LonCen, LatCen, lon, lat)
             value1 = RRQPE.data[y, x]
 
-            acum = np.zeros((5424, 5424))
+            np.zeros((5424, 5424))
 
             # Read the header metadata
             metadata = img.GetMetadata()
             scale = float(metadata.get(var + "#scale_factor"))
             offset = float(metadata.get(var + "#add_offset"))
             undef = float(metadata.get(var + "#_FillValue"))
-            dtime = metadata.get("NC_GLOBAL#time_coverage_start")
+            metadata.get("NC_GLOBAL#time_coverage_start")
 
             # Load the data
             ds = img.ReadAsArray(0, 0, img.RasterXSize, img.RasterYSize).astype(float)
@@ -134,7 +131,7 @@ def download_data_for_a_day(yyyymmdd):
             ds = ds * scale + offset
 
             # Apply NaN's where the quality flag is greater than 1
-            ds[ds_dqf > 0] = np.nan
+            ds[ds > 0] = np.nan
 
             value2 = ds[y, x]  # get_rrqpe_value(img)
             print(f"***Values for PoI at {yyyymmddhhmn}: {value1}/{value2}")

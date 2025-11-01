@@ -24,13 +24,13 @@ def apply_windowing(X, initial_time_step, max_time_step, window_size, target_idx
     idx_y_train_not_nan = np.where(~np.isnan(y_temp))[0]
     assert len(idx_y_train_not_nan) == len(y_temp)
 
-    x_train_is_nan_idx = np.unique(np.where(np.isnan(X_temp)))
+    np.unique(np.where(np.isnan(X_temp)))
     # assert len(x_train_is_nan_idx) == len(y_temp)
 
     # print(f'X.shape: {X.shape}')
     # print(f'Shapes before filtering: {X_temp.shape}, {y_temp.shape}')
 
-    idx_y_train_gt_zero = np.where(y_temp > 0)[0]
+    np.where(y_temp > 0)[0]
 
     # if only_y_gt_zero:
     #     y_train_gt_zero_idx = np.where(y_temp > 0)[0]

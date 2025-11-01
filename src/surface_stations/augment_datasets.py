@@ -8,6 +8,11 @@ import sys
 
 import numpy as np
 import pandas as pd
+from globals import (
+    ALERTARIO_WEATHER_STATION_IDS,
+    DATASETS_DIR,
+    INMET_WEATHER_STATION_IDS,
+)
 
 from src.utils.util import haversine_distance
 from utils.rainfall import OrdinalPrecipitationLevel, get_events_per_level

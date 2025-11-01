@@ -1,3 +1,4 @@
+import argparse
 import sys
 from datetime import datetime
 
@@ -74,10 +75,6 @@ def retrieve_data(station_id, initial_year, final_year, api_token):
             retrieve_from_station(station_id, initial_year, final_year, api_token)
     else:
         retrieve_from_station(station_id, initial_year, final_year, api_token)
-
-
-import argparse
-
 
 def main(argv):
     station_id = ""

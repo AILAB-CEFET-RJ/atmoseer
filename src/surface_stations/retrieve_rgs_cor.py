@@ -343,7 +343,8 @@ def main(argv):
         opts, args = getopt.getopt(
             argv[1:], "hs:a:b:e:", ["help", "station=", "begin=", "end="]
         )
-    except:
+    except getopt.GetoptError as err:
+        print(err)
         print(arg_help)
         sys.exit(2)
 

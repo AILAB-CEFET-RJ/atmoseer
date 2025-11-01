@@ -71,9 +71,9 @@ class ERA5Square:
         }
 
         pressure_levels_length = len([1000, 700, 200])
-        assert (
-            corner_data["top_left"]["r"].size == pressure_levels_length
-        ), f"top_left['r'].size: {corner_data['top_left']['r'].size}"
+        assert corner_data["top_left"]["r"].size == pressure_levels_length, (
+            f"top_left['r'].size: {corner_data['top_left']['r'].size}"
+        )
 
         results = []
         for corner in corner_data:
@@ -84,9 +84,9 @@ class ERA5Square:
             results.append(value)
 
         assert len(results) == len(corners), f"len(results)={len(results)} != 4"
-        assert (
-            len(results[0]) == pressure_levels_length
-        ), f"len(results[0])={len(results[0])} != 3"
+        assert len(results[0]) == pressure_levels_length, (
+            f"len(results[0])={len(results[0])} != 3"
+        )
         corner_sums = [np.sum(values) for values in results]
         best_corner = corners[np.argmax(corner_sums)]
         return corner_data[best_corner]["r"].values
@@ -108,9 +108,9 @@ class ERA5Square:
         }
 
         pressure_levels_length = len([1000, 700, 200])
-        assert (
-            corner_data["top_left"]["t"].size == pressure_levels_length
-        ), f"top_left['t'].size: {corner_data['top_left']['t'].size}"
+        assert corner_data["top_left"]["t"].size == pressure_levels_length, (
+            f"top_left['t'].size: {corner_data['top_left']['t'].size}"
+        )
 
         results = []
         for corner in corner_data:
@@ -120,9 +120,9 @@ class ERA5Square:
                 value = self._find_nearest_non_null(ds_time, lat, lon, "t")
             results.append(value)
         assert len(results) == len(corners), f"len(results)={len(results)} != 4"
-        assert (
-            len(results[0]) == pressure_levels_length
-        ), f"len(results[0])={len(results[0])} != 3"
+        assert len(results[0]) == pressure_levels_length, (
+            f"len(results[0])={len(results[0])} != 3"
+        )
 
         corner_sums = [np.sum(values) for values in results]
         best_corner = corners[np.argmax(corner_sums)]
@@ -167,9 +167,9 @@ class ERA5Square:
             corner: ds_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
         }
-        assert (
-            corner_data["top_left"]["u"].size == 3
-        ), f"top_left['u'].size: {corner_data['top_left']['u'].size}"
+        assert corner_data["top_left"]["u"].size == 3, (
+            f"top_left['u'].size: {corner_data['top_left']['u'].size}"
+        )
 
         results = []
         for corner in corner_data:
@@ -198,9 +198,9 @@ class ERA5Square:
             corner: ds_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
         }
-        assert (
-            corner_data["top_left"]["v"].size == 3
-        ), f"top_left['v'].size: {corner_data['top_left']['v'].size}"
+        assert corner_data["top_left"]["v"].size == 3, (
+            f"top_left['v'].size: {corner_data['top_left']['v'].size}"
+        )
 
         results = []
         for corner in corner_data:
@@ -228,9 +228,9 @@ class ERA5Square:
             corner: ds_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
         }
-        assert (
-            corner_data["top_left"]["w"].size == 3
-        ), f"top_left['w'].size: {corner_data['top_left']['w'].size}"
+        assert corner_data["top_left"]["w"].size == 3, (
+            f"top_left['w'].size: {corner_data['top_left']['w'].size}"
+        )
 
         results = []
         for corner in corner_data:
@@ -263,9 +263,9 @@ class ERA5Square:
 
         single_levels_length = 1
         for corner in corners:
-            assert (
-                corner_data[corner][data_var].size == single_levels_length
-            ), f"{corner}['{data_var}'].size: {corner_data[corner][{data_var}].size}"
+            assert corner_data[corner][data_var].size == single_levels_length, (
+                f"{corner}['{data_var}'].size: {corner_data[corner][{data_var}].size}"
+            )
 
         tp_values = [corner_data[corner][data_var].item() for corner in corners]
         max_tp = max(tp_values)

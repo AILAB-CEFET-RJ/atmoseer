@@ -6,11 +6,6 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SRC_DIR = PROJECT_ROOT / "src"
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
-
 import numpy as np
 import pandas as pd
 from sklearn.impute import KNNImputer
@@ -19,6 +14,10 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from config import globals
 from utils import util as util
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 def _safe_get(dct: dict, key: str, default=None):
     try:

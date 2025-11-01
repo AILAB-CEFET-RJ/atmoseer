@@ -262,9 +262,7 @@ def add_features_from_user_specified_data_sources(
         joined_df = add_missing_indicator_column(joined_df, "tpw_idx_missing")
         logging.info(f"Done! New shape: {joined_df.shape}.")
 
-        logging.info(
-            "Doing interpolation to imput missing values on the TPW values..."
-        )
+        logging.info("Doing interpolation to imput missing values on the TPW values...")
         joined_df["tpw_value"] = joined_df["tpw_value"].interpolate(method="linear")
         logging.info("Done!")
 
@@ -888,7 +886,7 @@ def main(argv):
             )  # This UTC thing is really anonying!
         else:
             train_test_threshold = pd.to_datetime(args.train_test_threshold)
-    except ParserError:
+    except pd.errors.ParserError:
         print(f"Invalid date format: {args.train_test_threshold}.")
         parser.print_help()
         sys.exit(2)
