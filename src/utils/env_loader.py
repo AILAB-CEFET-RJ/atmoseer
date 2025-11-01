@@ -52,7 +52,14 @@ def get_cemaden_credentials(reference_file: Path | None = None) -> Tuple[str, st
     username = os.getenv("CEMADEN_USERNAME")
     password = os.getenv("CEMADEN_PASSWORD")
 
-    missing = [name for name, value in (("CEMADEN_USERNAME", username), ("CEMADEN_PASSWORD", password)) if not value]
+    missing = [
+        name
+        for name, value in (
+            ("CEMADEN_USERNAME", username),
+            ("CEMADEN_PASSWORD", password),
+        )
+        if not value
+    ]
     if missing:
         raise RuntimeError(
             f"Missing environment variable(s): {', '.join(missing)}. "
@@ -60,4 +67,3 @@ def get_cemaden_credentials(reference_file: Path | None = None) -> Tuple[str, st
         )
 
     return username, password
-

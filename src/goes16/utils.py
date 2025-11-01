@@ -1,8 +1,10 @@
 from pathlib import Path
+
 from config import globals
 
 DATA_ROOT = Path(globals.GOES16_DATA_DIR)
 FEATURES_ROOT = Path(globals.GOES16_FEATURES_DIR)
+
 
 def build_channel_paths_by_year(channel: str):
     """
@@ -15,6 +17,7 @@ def build_channel_paths_by_year(channel: str):
     ]
     print(f"Found {len(temp)} directories for channel {channel} in {DATA_ROOT}")
     return temp
+
 
 def build_feature_paths_by_year(feature: str):
     """

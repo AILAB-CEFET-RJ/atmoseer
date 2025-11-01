@@ -122,7 +122,9 @@ def get_instances():
     )
 
 
-def build_features(start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_months: list[int]):
+def build_features(
+    start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_months: list[int]
+):
     try:
         (
             websirenes_keys,
@@ -137,7 +139,9 @@ def build_features(start_date: pd.Timestamp, end_date: pd.Timestamp, ignored_mon
             inmet_keys.build_keys()
             alertario_keys.build_keys()
 
-        spatio_temporal_features.build_timestamps_hourly(start_date, end_date, ignored_months)
+        spatio_temporal_features.build_timestamps_hourly(
+            start_date, end_date, ignored_months
+        )
 
         dataset_builder.build_netcdf(start_date, end_date, ignored_months)
     except Exception as e:

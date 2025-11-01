@@ -1,18 +1,19 @@
-import os
-import sys
-import yaml
-import pickle
-import logging
 import argparse
+import datetime
+import logging
+import os
+import pickle
+import sys
+
 import numpy as np
 import pandas as pd
-import datetime
-from typing import List
+import yaml
 
 from config import globals
 
+
 def split_dataframe_by_date(df, threshold_date):
-    threshold_date = pd.to_datetime(threshold_date).tz_localize('UTC')
+    threshold_date = pd.to_datetime(threshold_date).tz_localize("UTC")
     df_train_val = df[df.index < threshold_date]
     df_test = df[df.index >= threshold_date]
     return df_train_val, df_test
@@ -33,7 +34,9 @@ def apply_subsampling(X, y, method):
         # Exemplo: mantém apenas 50% dos exemplos com chuva < 1
         mask = y >= 1
         non_rain_idx = y < 1
-        sampled_non_rain_idx = np.random.choice(np.where(non_rain_idx)[0], size=int(len(non_rain_idx) * 0.5), replace=False)
+        sampled_non_rain_idx = np.random.choice(
+            np.where(non_rain_idx)[0], size=int(len(non_rain_idx) * 0.5), replace=False
+        )
         selected_idx = np.concatenate([np.where(mask)[0], sampled_non_rain_idx])
         return X[selected_idx], y[selected_idx]
     elif method == "NEGATIVE":
@@ -45,24 +48,27 @@ def generate_windowed_split(df_train, df_val, df_test, target_name, window_size)
     def create_X_y(df):
         X, y = [], []
         for i in range(window_size, len(df)):
-            X.append(df.iloc[i-window_size:i].values)
+            X.append(df.iloc[i - window_size : i].values)
             y.append(df.iloc[i][target_name])
         return np.array(X), np.array(y)
 
     return (*create_X_y(df_train), *create_X_y(df_val), *create_X_y(df_test))
 
 
-def build_datasets(station_id: str,
-                   input_folder: str,
-                   train_start_threshold: datetime.datetime,
-                   train_test_threshold: datetime.datetime,
-                   test_end_threshold: datetime.datetime,
-                   subsampling_procedure: str):
+def build_datasets(
+    station_id: str,
+    input_folder: str,
+    train_start_threshold: datetime.datetime,
+    train_test_threshold: datetime.datetime,
+    test_end_threshold: datetime.datetime,
+    subsampling_procedure: str,
+):
+    df = pd.read_parquet(
+        os.path.join(input_folder, f"{station_id}_preprocessed.parquet.gzip")
+    )
 
-    df = pd.read_parquet(os.path.join(input_folder, f"{station_id}_preprocessed.parquet.gzip"))
-
-    train_start_threshold = pd.to_datetime(train_start_threshold).tz_localize('UTC')
-    test_end_threshold = pd.to_datetime(test_end_threshold).tz_localize('UTC')
+    train_start_threshold = pd.to_datetime(train_start_threshold).tz_localize("UTC")
+    test_end_threshold = pd.to_datetime(test_end_threshold).tz_localize("UTC")
     if train_start_threshold:
         df = df[df.index >= train_start_threshold]
     if test_end_threshold:
@@ -74,7 +80,7 @@ def build_datasets(station_id: str,
 
     os.makedirs(globals.DATASETS_DIR, exist_ok=True)
     filename_base = globals.DATASETS_DIR + f"{station_id}"
-    df.to_parquet(f"{filename_base}.parquet.gzip", compression='gzip')
+    df.to_parquet(f"{filename_base}.parquet.gzip", compression="gzip")
 
     df_train_val, df_test = split_dataframe_by_date(df, train_test_threshold)
     n = len(df_train_val)
@@ -86,7 +92,7 @@ def build_datasets(station_id: str,
     df_val.to_parquet(f"{filename_base}_val.parquet.gzip")
     df_test.to_parquet(f"{filename_base}_test.parquet.gzip")
 
-    target_name = "precipitation" 
+    target_name = "precipitation"
     df_train = min_max_normalize(df_train)
     df_val = min_max_normalize(df_val)
     df_test = min_max_normalize(df_test)
@@ -114,19 +120,25 @@ def build_datasets(station_id: str,
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--station_id', required=True)
-    parser.add_argument('-tt', '--train_test_threshold', required=True)
-    parser.add_argument('-b', '--train_start_threshold')
-    parser.add_argument('-e', '--test_end_threshold')
-    parser.add_argument('-sp', '--subsampling_procedure', default="NONE")
+    parser.add_argument("-s", "--station_id", required=True)
+    parser.add_argument("-tt", "--train_test_threshold", required=True)
+    parser.add_argument("-b", "--train_start_threshold")
+    parser.add_argument("-e", "--test_end_threshold")
+    parser.add_argument("-sp", "--subsampling_procedure", default="NONE")
 
     args = parser.parse_args(argv[1:])
     input_folder = globals.CEMADEN_DATA_DIR + "/preprocessed/"
 
     try:
         ttt = pd.to_datetime(args.train_test_threshold)
-        tst = pd.to_datetime(args.train_start_threshold) if args.train_start_threshold else None
-        tet = pd.to_datetime(args.test_end_threshold) if args.test_end_threshold else None
+        tst = (
+            pd.to_datetime(args.train_start_threshold)
+            if args.train_start_threshold
+            else None
+        )
+        tet = (
+            pd.to_datetime(args.test_end_threshold) if args.test_end_threshold else None
+        )
     except Exception as e:
         print("Erro ao converter datas:", str(e))
         parser.print_help()
@@ -138,7 +150,7 @@ def main(argv):
         train_start_threshold=tst,
         train_test_threshold=ttt,
         test_end_threshold=tet,
-        subsampling_procedure=args.subsampling_procedure
+        subsampling_procedure=args.subsampling_procedure,
     )
 
 

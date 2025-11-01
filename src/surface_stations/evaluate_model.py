@@ -1,35 +1,42 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import yaml
-import time
-
-import numpy as np
-import sys
 import argparse
-import time
-import train.pipeline as pipeline
-
-from train.ordinal_classifier import OrdinalClassifier
-from train.binary_classifier import BinaryClassifier
-from train.regression_net import Regressor
-from train.training_utils import DeviceDataLoader, to_device, gen_learning_curve, seed_everything
-from train.conv1d_neural_net import Conv1DNeuralNet 
-from train.lstm_neural_net import LstmNeuralNet
-import src.utils.rainfall as rp
-
-from config import globals
-
 import logging
+import sys
+import time
+
+import torch
+import yaml
+
+import src.utils.rainfall as rp
+import train.pipeline as pipeline
+from config import globals
+from train.binary_classifier import BinaryClassifier
+from train.ordinal_classifier import OrdinalClassifier
+from train.regression_net import Regressor
+from train.training_utils import (
+    DeviceDataLoader,
+    seed_everything,
+    to_device,
+)
+
 
 def main(argv):
     parser = argparse.ArgumentParser(description="Train a rainfall forecasting model.")
-    parser.add_argument("-t", "--task", choices=["ORDINAL_CLASSIFICATION", "BINARY_CLASSIFICATION"],
-                        default="REGRESSION", help="Prediction task")
-    parser.add_argument("-l", "--learner", choices=["Conv1DNeuralNet", "LstmNeuralNet"],
-                        default="LstmNeuralNet", help="Learning algorithm to be used.")
+    parser.add_argument(
+        "-t",
+        "--task",
+        choices=["ORDINAL_CLASSIFICATION", "BINARY_CLASSIFICATION"],
+        default="REGRESSION",
+        help="Prediction task",
+    )
+    parser.add_argument(
+        "-l",
+        "--learner",
+        choices=["Conv1DNeuralNet", "LstmNeuralNet"],
+        default="LstmNeuralNet",
+        help="Learning algorithm to be used.",
+    )
     parser.add_argument("-p", "--pipeline_id", required=True, help="Pipeline ID")
-    
+
     args = parser.parse_args(argv[1:])
 
     forecasting_task_id = None
@@ -44,9 +51,10 @@ def main(argv):
     seed_everything()
 
     X_train, y_train, X_val, y_val, X_test, y_test = pipeline.load_datasets(
-        args.pipeline_id)
+        args.pipeline_id
+    )
 
-    with open('./config/config.yaml', 'r') as file:
+    with open("./config/config.yaml", "r") as file:
         config = yaml.safe_load(file)
     SEQ_LENGTH = config["preproc"]["SLIDING_WINDOW_SIZE"]
 
@@ -78,11 +86,13 @@ def main(argv):
     print(f"Number of features: {NUM_FEATURES}")
 
     # Instantiate the learner class
-    learner = class_obj(seq_length = SEQ_LENGTH,
-                        input_size = NUM_FEATURES, 
-                        output_size = OUTPUT_SIZE,
-                        dropout_rate = DROPOUT_RATE)
-    print(f'Learner: {learner}')
+    learner = class_obj(
+        seq_length=SEQ_LENGTH,
+        input_size=NUM_FEATURES,
+        output_size=OUTPUT_SIZE,
+        dropout_rate=DROPOUT_RATE,
+    )
+    print(f"Learner: {learner}")
 
     if prediction_task_sufix == "oc":
         forecaster = OrdinalClassifier(learner)
@@ -94,7 +104,7 @@ def main(argv):
     #
     # Load model.
     #
-    filename = globals.MODELS_DIR + '/best_' + args.pipeline_id + '.pt'
+    filename = globals.MODELS_DIR + "/best_" + args.pipeline_id + ".pt"
     logging.info(f"Loading model from file {filename}")
     forecaster.learner.load_state_dict(torch.load(filename))
 
@@ -104,7 +114,10 @@ def main(argv):
     test_loader = learner.create_dataloader(X_test, y_test, batch_size=BATCH_SIZE)
     test_loader = DeviceDataLoader(test_loader, device)
     to_device(forecaster.learner, device)
-    forecaster.print_evaluation_report(args.pipeline_id, test_loader, forecasting_task_id)
+    forecaster.print_evaluation_report(
+        args.pipeline_id, test_loader, forecasting_task_id
+    )
+
 
 if __name__ == "__main__":
     start_time = time.time()

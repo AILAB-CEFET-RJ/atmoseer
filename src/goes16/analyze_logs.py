@@ -4,13 +4,12 @@
 # the script will parse each log file to extract relevant information.
 import os
 import re
-from datetime import datetime
 
 LOG_DIR = "src/goes16/features"
 LOG_PATTERNS = {
     "warnings": re.compile(r"\[WARNING\] (.+)"),
     "errors": re.compile(r"\[ERROR\] (.+)"),
-    "exceptions": re.compile(r"\[ERROR\] (.+?)(?=\n|$)")
+    "exceptions": re.compile(r"\[ERROR\] (.+?)(?=\n|$)"),
 }
 
 
@@ -34,8 +33,11 @@ def summarize_logs():
         for kind in ["warnings", "errors", "exceptions"]:
             items = result[kind]
             if items:
-                print(f"  {kind.capitalize()}: {len(items)} ocorrências. Ex: {items[0]}")
+                print(
+                    f"  {kind.capitalize()}: {len(items)} ocorrências. Ex: {items[0]}"
+                )
         print()
+
 
 if __name__ == "__main__":
     summarize_logs()

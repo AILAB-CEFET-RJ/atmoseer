@@ -28,13 +28,13 @@ limitations under the License.
      trmm_<local/remote>_cksum_<year>.txt
  If the local file does not exists calls calculate_cksum() to create one
  If the remote cksum file does not exist calls retrieve_cksum() to create one
- The remote checksum are retrieved directly from the cksum field in 
+ The remote checksum are retrieved directly from the cksum field in
    the filename.xml available online.
- The checksums are compared for each files and if they are not matching 
+ The checksums are compared for each files and if they are not matching
    the local file is deleted and download it again using the requests module
  The requests module also handle the website cookies by opening a session
    at the start of the script
- 
+
  Uses the following modules:
  import requests to download files and html via http
  import beautifulsoup4 to parse html
@@ -42,42 +42,33 @@ limitations under the License.
  import time and calendar to convert timestamp in filename
         to day number from 1-366 for each year
  import subprocess to run cksum as a shell command
- import argparse to manage inputs 
+ import argparse to manage inputs
  should work with both python 2 and 3
 
 """
 
-
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
-    import xml.etree.ElementTree as ET
-import os
-import sys
-import time, calendar
+    pass
 import argparse
-import subprocess
-import requests
-import re
-from bs4 import BeautifulSoup
-from datetime import datetime
-# from util import set_log, check_mdt, print_summary
 
-import os
-import hashlib
+# from util import set_log, check_mdt, print_summary
 import logging
-import calendar
+import os
+import re
+import sys
+import time
 from datetime import datetime
-from time import gmtime, strptime
-import requests
+
 import dateutil.parser
+import numpy as np
 import pytz
+import requests
+from bs4 import BeautifulSoup
 from netCDF4 import Dataset
 
 from config import globals
-
-import numpy as np
-import time
 
 
 def set_log(name, fname, level):
@@ -99,8 +90,7 @@ def set_log(name, fname, level):
     # start a logger
     logger = logging.getLogger(name)
     # set a formatter to manage the output format of our handler
-    formatter = logging.Formatter(
-        "%(asctime)s | %(message)s", "%H:%M:%S")
+    formatter = logging.Formatter("%(asctime)s | %(message)s", "%H:%M:%S")
     minimal = logging.Formatter("%(message)s")
     if level == "debug":
         minimal = logging.Formatter("%(levelname)s: %(message)s")
@@ -122,18 +112,18 @@ def set_log(name, fname, level):
     return logger
 
 
-def check_mdt(req, fpath, logger, remoteModDate=None, furl=None,
-              head_key='Last-modified'):
+def check_mdt(
+    req, fpath, logger, remoteModDate=None, furl=None, head_key="Last-modified"
+):
     """Check local and remote modified time and return comparison
-       You have to pass either the remote last modified date or
-       the file url to try to retrieve it
+    You have to pass either the remote last modified date or
+    the file url to try to retrieve it
     """
     if not remoteModDate:
         response = req.head(furl)
         remoteModDate = response.headers[head_key]
     remoteModDate = dateutil.parser.parse(remoteModDate)
-    localModDate = datetime.fromtimestamp(
-                   os.path.getmtime(fpath))
+    localModDate = datetime.fromtimestamp(os.path.getmtime(fpath))
     localModDate = localModDate.replace(tzinfo=pytz.UTC)
     to_update = localModDate < remoteModDate
     logger.debug(f"File: {fpath}")
@@ -163,39 +153,44 @@ def print_summary(updated, new, error, logger):
     logger.info("\n\n")
 
 
-import argparse
+
 
 def parse_input():
-    ''' Parse input arguments '''
+    """Parse input arguments"""
     parser = argparse.ArgumentParser(
-        description='''Retrieve GPM-IMERG data from NASA server for a given date range.''',
-        formatter_class=argparse.RawTextHelpFormatter
+        description="""Retrieve GPM-IMERG data from NASA server for a given date range.""",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
 
     parser.add_argument(
-        '--ignored_months', type=int, nargs='*', default=[],
-        help='List of month numbers (1-12) to ignore in the download process. Example: --ignored_months 6 7'
+        "--ignored_months",
+        type=int,
+        nargs="*",
+        default=[],
+        help="List of month numbers (1-12) to ignore in the download process. Example: --ignored_months 6 7",
     )
 
     parser.add_argument(
-        '--begin_date', type=str, required=True,
-        help='Start date in format YYYY/MM/DD'
+        "--begin_date", type=str, required=True, help="Start date in format YYYY/MM/DD"
     )
     parser.add_argument(
-        '--end_date', type=str, required=True,
-        help='End date in format YYYY/MM/DD'
+        "--end_date", type=str, required=True, help="End date in format YYYY/MM/DD"
+    )
+    parser.add_argument("-u", "--user", type=str, required=True, help="User account")
+    parser.add_argument(
+        "-p",
+        "--pwd",
+        type=str,
+        default=None,
+        required=False,
+        help="Account password (optional if GPMPWD env variable is set)",
     )
     parser.add_argument(
-        '-u', '--user', type=str, required=True,
-        help='User account'
-    )
-    parser.add_argument(
-        '-p', '--pwd', type=str, default=None, required=False,
-        help='Account password (optional if GPMPWD env variable is set)'
-    )
-    parser.add_argument(
-        '-d', '--debug', action='store_true', required=False,
-        help='Print out debug information (default is False)'
+        "-d",
+        "--debug",
+        action="store_true",
+        required=False,
+        help="Print out debug information (default is False)",
     )
 
     return vars(parser.parse_args())
@@ -232,17 +227,20 @@ def robust_download(session, url, retries=5, backoff_factor=2, **kwargs):
             response.raise_for_status()
             return response
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            wait_time = backoff_factor ** attempt
-            print(f"Attempt {attempt + 1} failed: {e}. Retrying in {wait_time} seconds...")
+            wait_time = backoff_factor**attempt
+            print(
+                f"Attempt {attempt + 1} failed: {e}. Retrying in {wait_time} seconds..."
+            )
             time.sleep(wait_time)
         except requests.exceptions.RequestException as e:
             print(f"Permanent failure: {e}")
             break
     return None
 
+
 def download_file(session, url, fname, local_dir, size, data_log):
-    '''Download file using requests '''
-    status = 'fine'
+    """Download file using requests"""
+    status = "fine"
     data_log.debug(url)
     try:
         # Optionally, set a timeout for the request to prevent hanging.
@@ -268,95 +266,102 @@ def download_file(session, url, fname, local_dir, size, data_log):
         # Handle any other type of request exception
         sys.exit(1)
 
-    with open(fname, 'wb') as f:
+    with open(fname, "wb") as f:
         f.write(r.content)
     del r
 
     local_size = int(os.stat(fname).st_size)
     if local_size < size:
-        status = 'error'
-    
+        status = "error"
 
     try:
-
         timestamp, precipitation = crop_precipitation(fname)
 
         var_name = timestamp.strftime("%Y_%m_%d_%H_%M")
-        day_str = timestamp.strftime('%Y-%m-%d')
+        day_str = timestamp.strftime("%Y-%m-%d")
 
-        file_path = f'{local_dir}/{day_str}.nc'
+        file_path = f"{local_dir}/{day_str}.nc"
 
         update_or_create_netcdf(file_path, var_name, precipitation)
         delete_file(fname)
 
     except Exception as e:
-        status = 'error'
-        print(f'Error cropping file: {e}')
+        status = "error"
+        print(f"Error cropping file: {e}")
 
-    return status 
+    return status
+
 
 def update_or_create_netcdf(file_path, var_name, var_value):
     """
     Atualiza ou cria um arquivo NetCDF.
-    
+
     Args:
     - file_path: Caminho do arquivo NetCDF.
     - var_name: Nome da variável a ser adicionada.
     - var_value: Valor da nova variável.
     - dimensions: Dimensões para a variável (default: ('time',)).
     """
-    
+
     # Verifica se o arquivo já existe
     if os.path.exists(file_path):
         print("Arquivo existe. Atualizando...")
         # Abrir no modo append
-        with Dataset(file_path, mode='a') as dataset:
+        with Dataset(file_path, mode="a") as dataset:
             if var_name not in dataset.variables:
                 # Create dimensions based on the shape of the numpy array
                 for i, dim_size in enumerate(var_value.shape):
                     dim_name = f"dim_{i}_{var_name}"
                     if dim_name not in dataset.dimensions:
                         dataset.createDimension(dim_name, dim_size)
-                
+
                 # Create a variable with the timestamp as its name
-                var = dataset.createVariable(var_name, var_value.dtype, tuple(f"dim_{i}_{var_name}" for i in range(var_value.ndim)))
-                
+                var = dataset.createVariable(
+                    var_name,
+                    var_value.dtype,
+                    tuple(f"dim_{i}_{var_name}" for i in range(var_value.ndim)),
+                )
+
                 # Assign the data from the numpy array to the variable
                 var[:] = var_value
-       
+
             else:
                 print(f"A variável '{var_name}' já existe.")
     else:
         print("Arquivo não existe. Criando...")
         # Criar novo arquivo NetCDF
-        with Dataset(file_path, mode='w') as nc:
-                # Create dimensions based on the shape of the numpy array
-                for i, dim_size in enumerate(var_value.shape):
-                    dim_name = f"dim_{i}_{var_name}"
-                    if dim_name not in nc.dimensions:
-                        nc.createDimension(dim_name, dim_size)
-                
-                # Create a variable with the timestamp as its name
-                var = nc.createVariable(var_name, var_value.dtype, tuple(f"dim_{i}_{var_name}" for i in range(var_value.ndim)))
-                
-                # Assign the data from the numpy array to the variable
-                var[:] = var_value
+        with Dataset(file_path, mode="w") as nc:
+            # Create dimensions based on the shape of the numpy array
+            for i, dim_size in enumerate(var_value.shape):
+                dim_name = f"dim_{i}_{var_name}"
+                if dim_name not in nc.dimensions:
+                    nc.createDimension(dim_name, dim_size)
+
+            # Create a variable with the timestamp as its name
+            var = nc.createVariable(
+                var_name,
+                var_value.dtype,
+                tuple(f"dim_{i}_{var_name}" for i in range(var_value.ndim)),
+            )
+
+            # Assign the data from the numpy array to the variable
+            var[:] = var_value
 
 
 def crop_precipitation(fname):
     dataset = Dataset(fname, "r", format="NETCDF4")
 
-    header = dataset.getncattr("FileHeader").split(';')
+    header = dataset.getncattr("FileHeader").split(";")
 
     for elem in header:
-        if 'StartGranuleDateTime' in elem:
-            timestamp_str = elem.split('=')[1]
+        if "StartGranuleDateTime" in elem:
+            timestamp_str = elem.split("=")[1]
             timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
 
     # Abrindo o arquivo
-    lat = dataset.variables['lat'][:]
-    lon = dataset.variables['lon'][:]
-    precipitation = dataset.variables['precipitation']
+    lat = dataset.variables["lat"][:]
+    lon = dataset.variables["lon"][:]
+    precipitation = dataset.variables["precipitation"]
 
     # Define the latitude bounds
     lower_latitude_bound = globals.lat_min
@@ -367,100 +372,114 @@ def crop_precipitation(fname):
     upper_longitude_bound = globals.lon_max
 
     # Find latitude indices of elements within the bounds
-    indices_in_range_latitude = np.where((lat >= lower_latitude_bound) & (lat <= upper_latitude_bound))[0]
-    indices_in_range_longitude = np.where((lon >= lower_longitude_bound) & (lon <= upper_longitude_bound))[0]
-    precipitation_data = precipitation[0, indices_in_range_longitude, :][:, indices_in_range_latitude].T
-    
+    indices_in_range_latitude = np.where(
+        (lat >= lower_latitude_bound) & (lat <= upper_latitude_bound)
+    )[0]
+    indices_in_range_longitude = np.where(
+        (lon >= lower_longitude_bound) & (lon <= upper_longitude_bound)
+    )[0]
+    precipitation_data = precipitation[0, indices_in_range_longitude, :][
+        :, indices_in_range_latitude
+    ].T
+
     dataset.close()  # Feche o arquivo para liberar o bloqueio
 
     return timestamp, precipitation_data
 
 
 def download_yr(session, http_url, yr, data_dir, days, data_log):
-    '''Download the whole year directory'''
+    """Download the whole year directory"""
     r = session.get(f"{http_url}/{yr}/contents.html")
-    soup = BeautifulSoup(r.content,'html.parser')
-    status = {'new': [], 'updated' : [], 'error' : []}
+    soup = BeautifulSoup(r.content, "html.parser")
+    status = {"new": [], "updated": [], "error": []}
     # find all links with 3 digits indicating day of year folders
-    for link in soup.find_all('a',string=re.compile('^\d{3}/')):
-        subdir=link.get('href').rstrip()
+    for link in soup.find_all("a", string=re.compile("^\d{3}/")):
+        subdir = link.get("href").rstrip()
         if days != [] and subdir[:3] not in days:
-            data_log.debug(f'skipping {subdir[:3]}')
+            data_log.debug(f"skipping {subdir[:3]}")
             continue
         r2 = session.get(f"{http_url}/{yr}/{subdir}")
-        soup2 = BeautifulSoup(r2.content,'html.parser')
+        soup2 = BeautifulSoup(r2.content, "html.parser")
         # the same href file link is repeated in the html,
         # so we need to keep track of what we already checked
         done_list = []
-        for sub in soup2.find_all('a', href=re.compile(
-                                  '^3B-HHR.*\.HDF5\..*\.html$')):
-            href = sub.get('href')
-            if sub.find_next('time'):
-                sub_next = sub.find_next('time')
+        for sub in soup2.find_all("a", href=re.compile("^3B-HHR.*\.HDF5\..*\.html$")):
+            href = sub.get("href")
+            if sub.find_next("time"):
+                sub_next = sub.find_next("time")
                 last_mod = sub_next.text.strip()
-                size = sub_next.find_next('td').text.strip()
+                size = sub_next.find_next("td").text.strip()
                 data_log.debug(f"{href}: {last_mod}, {size}")
             if href in done_list:
                 continue
             else:
                 done_list.append(href)
-                status = process_file(session, data_dir, yr, http_url, 
-                    subdir, href, last_mod, int(size), status, data_log)
+                status = process_file(
+                    session,
+                    data_dir,
+                    yr,
+                    http_url,
+                    subdir,
+                    href,
+                    last_mod,
+                    int(size),
+                    status,
+                    data_log,
+                )
                 if status == "error":
-                    print(f'Downloading failed: {http_url}/{subdir}/{href}')
+                    print(f"Downloading failed: {http_url}/{subdir}/{href}")
     data_log.info(f"Download for year {yr} is complete")
     return status
 
 
-def process_file(session, data_dir, yr, http_url, subdir, href, 
-                 last_mod, size, status, data_log):
+def process_file(
+    session, data_dir, yr, http_url, subdir, href, last_mod, size, status, data_log
+):
     """Check if file exists and/or needs updating, if new or to update,
-       download file
+    download file
     """
-    fname = href.replace('HDF5.dmr.html','nc')
+    fname = href.replace("HDF5.dmr.html", "nc")
     local_name = f"{data_dir}/{yr}/{fname}"
     local_dir = f"{data_dir}/{yr}"
     if not os.path.exists(local_name):
         data_log.debug(f"New file: {local_name}")
-        furl = f"{http_url}/{yr}/" + \
-               f"{subdir.replace('contents.html','')}" + \
-               f"{href.replace('.dmr.html','.dap.nc4')}"
+        furl = (
+            f"{http_url}/{yr}/"
+            + f"{subdir.replace('contents.html', '')}"
+            + f"{href.replace('.dmr.html', '.dap.nc4')}"
+        )
         data_log.debug(furl)
         st = download_file(session, furl, local_name, local_dir, size, data_log)
-        if st == 'error':
-            status['error'].append(local_name)
+        if st == "error":
+            status["error"].append(local_name)
         else:
-            status['new'].append(local_name)
+            status["new"].append(local_name)
     else:
-        update = check_mdt(session, local_name, data_log,
-                           remoteModDate=last_mod)
+        update = check_mdt(session, local_name, data_log, remoteModDate=last_mod)
         if update:
             os.remove(local_name)
             st = download_file(session, furl, local_name, local_dir, size, data_log)
-            if st == 'error':
-                status['error'].append(local_name)
+            if st == "error":
+                status["error"].append(local_name)
             else:
-                status['updated'].append(local_name)
+                status["updated"].append(local_name)
     return status
 
 
 def open_session(usr, pwd):
-    '''Open a requests session to manage connection to server '''
+    """Open a requests session to manage connection to server"""
     session = requests.session()
-    p = session.post("http://urs.earthdata.nasa.gov", {'user':usr,'password':pwd})
-    print(f'session.post: {p}')
-    cookies=requests.utils.dict_from_cookiejar(session.cookies)
-    return session 
+    p = session.post("http://urs.earthdata.nasa.gov", {"user": usr, "password": pwd})
+    print(f"session.post: {p}")
+    cookies = requests.utils.dict_from_cookiejar(session.cookies)
+    return session
 
-from datetime import datetime, timedelta
-import os
-import sys
 
-from datetime import datetime, timedelta
-import os
+from datetime import timedelta
+
 
 def main():
-    '''
+    """
     Before running this script, perform the three steps described below.
 
     1) Create an user account in the Earthdata Portal (https://urs.earthdata.nasa.gov/users/new)
@@ -470,20 +489,20 @@ def main():
     > touch .netrc
     > echo "machine urs.earthdata.nasa.gov login uid_goes_here password password_goes_here" > .netrc
     > chmod 0600 .netrc
-    where uid_goes_here is your Earthdata Login username and password_goes_here is your Earthdata Login password. 
-    Note that some password characters can cause problems. A backslash or space anywhere in your password will need to be escaped with an additional backslash. 
-    Similarly, if you use a '#' as the first character of your password, it will also need to be escaped with a preceding backslash. 
-    Depending on your environment, the use of double-quotes " may be turned into "smart-quotes" automatically. We recommend turning this feature off. 
-    Some users have found that the double quotes are not supported by their systems. 
-    Some users have found that the > is aliased to >> on some machines. 
-    This will append the text instead of overwrite the text. 
+    where uid_goes_here is your Earthdata Login username and password_goes_here is your Earthdata Login password.
+    Note that some password characters can cause problems. A backslash or space anywhere in your password will need to be escaped with an additional backslash.
+    Similarly, if you use a '#' as the first character of your password, it will also need to be escaped with a preceding backslash.
+    Depending on your environment, the use of double-quotes " may be turned into "smart-quotes" automatically. We recommend turning this feature off.
+    Some users have found that the double quotes are not supported by their systems.
+    Some users have found that the > is aliased to >> on some machines.
+    This will append the text instead of overwrite the text.
     We recommend checking your ~/.netrc file to ensure it only has one line.
 
-    3) Create a cookie file. 
+    3) Create a cookie file.
     This will be used to persist sessions across individual cURL/Wget calls, making it more efficient.
     > cd ~
     > touch .urs_cookies
-    '''
+    """
     args = parse_input()
 
     begin_date = datetime.strptime(args["begin_date"], "%Y/%m/%d")
@@ -515,19 +534,21 @@ def main():
     except:
         print("Pass a password as input or set the GPMPWD variable")
 
-    today = datetime.today().strftime('%Y-%m-%d')
+    today = datetime.today().strftime("%Y-%m-%d")
     sys_user = os.getenv("USER")
     root_dir = os.getenv("AUSREFDIR", ".")
     run_dir = f"{root_dir}"
 
-    http_url = "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
+    http_url = (
+        "https://gpm1.gesdisc.eosdis.nasa.gov/opendap/hyrax/GPM_L3/GPM_3IMERGHH.07"
+    )
     data_dir = f"{root_dir}/data/GPM"
     flog = f"{run_dir}/gpm_update_log.txt"
 
     level = "info"
     if args.get("debug", False):
         level = "debug"
-    data_log = set_log('gpmlog', flog, level)
+    data_log = set_log("gpmlog", flog, level)
 
     directory = f"{data_dir}/{yr}"
     if not os.path.exists(directory):
@@ -540,7 +561,7 @@ def main():
     status = download_yr(session, http_url, yr, data_dir, days, data_log)
 
     data_log.info(f"Updated on {today} by {sys_user}")
-    print_summary(status['updated'], status['new'], status['error'], data_log)
+    print_summary(status["updated"], status["new"], status["error"], data_log)
 
 
 if __name__ == "__main__":

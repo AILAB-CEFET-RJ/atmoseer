@@ -105,24 +105,32 @@ class WebsirenesDataset:
         )
 
         has_last_timestamp_plus_one_hour = self._has_timesteps(
-            max_timestamp.year, max_timestamp.month, max_timestamp.day, max_timestamp.hour + 1
+            max_timestamp.year,
+            max_timestamp.month,
+            max_timestamp.day,
+            max_timestamp.hour + 1,
         )
         added_extra_hour = 1 if has_last_timestamp_plus_one_hour else 0
 
         total_samples = (
             validated_total_timestamps - self.TIMESTEPS + added_extra_hour
             if overlapping
-            else validated_total_timestamps - (2 * self.TIMESTEPS) + 1 + added_extra_hour
+            else validated_total_timestamps
+            - (2 * self.TIMESTEPS)
+            + 1
+            + added_extra_hour
         )
 
         timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
 
-        log.info(f"""
+        log.info(
+            f"""
             Total timestamps: {validated_total_timestamps}
             Min timestamp: {min_timestamp}
             Max timestamp: {max_timestamp}
             Total samples: {total_samples} (overlapping: {overlapping})
-        """)
+        """
+        )
 
         data_x_list = []
         data_y_list = []
@@ -137,7 +145,9 @@ class WebsirenesDataset:
             data_y_list.append(data_y)
             # high space complexity, may need to investigate another approach
 
-        assert len(data_x_list) == len(data_y_list), "Mismatch between data_x and data_y lists"
+        assert len(data_x_list) == len(
+            data_y_list
+        ), "Mismatch between data_x and data_y lists"
 
         data_x = np.stack(data_x_list, axis=0)
         data_y = np.stack(data_y_list, axis=0)
@@ -148,7 +158,9 @@ class WebsirenesDataset:
         # assert len(data_x) == total_samples, f"Expected {total_samples} samples, got {len(data_x)}"
         # this assertion is not valid when ignoring months
 
-        assert data_x.shape == data_y.shape, f"x shape {data_x.shape} != y shape {data_y.shape}"
+        assert (
+            data_x.shape == data_y.shape
+        ), f"x shape {data_x.shape} != y shape {data_y.shape}"
 
         log.debug(f"data_x shape: {data_x.shape}")
         log.debug(f"data_y shape: {data_y.shape}")

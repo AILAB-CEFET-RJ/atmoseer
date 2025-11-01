@@ -1,15 +1,16 @@
 import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import folium
-import requests
 from pathlib import Path
+
+import folium
+import matplotlib.pyplot as plt
+import pandas as pd
+import requests
 
 from src.surface_stations.retrieve_ws_cemaden import get_token
 from src.utils.env_loader import get_cemaden_credentials
 
-
 NOME_SECRETO, SENHA_SECRETA = get_cemaden_credentials()
+
 
 def get_estacao_posicoes(codibge="3304557"):
     url = "https://sws.cemaden.gov.br/PED/rest/pcds-cadastro/dados-cadastrais"
@@ -17,7 +18,7 @@ def get_estacao_posicoes(codibge="3304557"):
     headers = {"token": token}
     params = {"codibge": codibge, "formato": "json"}
     response = requests.get(url, headers=headers, params=params)
-    
+
     posicoes = {}
     if response.status_code == 200:
         estacoes = response.json()
@@ -28,6 +29,7 @@ def get_estacao_posicoes(codibge="3304557"):
             if cod and lat and lon:
                 posicoes[cod] = (lat, lon)
     return posicoes
+
 
 def calcular_chuva_por_estacao(raw_folder="data/ws/cemaden/raw/"):
     chuva_total = {}
@@ -44,6 +46,7 @@ def calcular_chuva_por_estacao(raw_folder="data/ws/cemaden/raw/"):
                 print(f"Erro ao ler {file}: {e}")
     return chuva_total
 
+
 def plotar_mapa_matplotlib(chuva_total, posicoes):
     lats, lons, intensidades = [], [], []
     for cod, total in chuva_total.items():
@@ -58,7 +61,9 @@ def plotar_mapa_matplotlib(chuva_total, posicoes):
         return
 
     plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(lons, lats, c=intensidades, cmap="viridis", s=100, edgecolor='k')
+    scatter = plt.scatter(
+        lons, lats, c=intensidades, cmap="viridis", s=100, edgecolor="k"
+    )
     plt.colorbar(scatter, label="Chuva acumulada (mm)")
     plt.title("Estações e precipitação acumulada")
     plt.xlabel("Longitude")
@@ -66,6 +71,7 @@ def plotar_mapa_matplotlib(chuva_total, posicoes):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
 
 def gerar_mapa_com_folium(chuva_total, posicoes, saida_html="mapa_chuva.html"):
     mapa = folium.Map(location=[-22.9, -43.2], zoom_start=8)
@@ -89,12 +95,11 @@ def gerar_mapa_com_folium(chuva_total, posicoes, saida_html="mapa_chuva.html"):
                 fill=True,
                 fill_color=cor,
                 fill_opacity=0.6,
-                popup=f"Estação: {cod}<br>Chuva: {total:.1f} mm"
+                popup=f"Estação: {cod}<br>Chuva: {total:.1f} mm",
             ).add_to(mapa)
 
     mapa.save(saida_html)
     print(f"Mapa interativo salvo em: {saida_html}")
-
 
 
 posicoes = get_estacao_posicoes()

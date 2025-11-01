@@ -38,10 +38,14 @@ class WebSirenesKeys:
         existing_station_names = set(self.websirenes_coords["estacao"].values)
         for file in self.websirenes_parser.list_files():
             file_path = str(self.websirenes_parser.websirenes_defesa_civil_path / file)
-            name, station_id = self.websirenes_parser.read_station_name_id_txt_file(file_path)
+            name, station_id = self.websirenes_parser.read_station_name_id_txt_file(
+                file_path
+            )
             if name not in existing_station_names:
                 not_founds_in_coords.append({"name": name, "station_id": station_id})
-        log.warning(f"Stations not found in websirenes coordinates: {not_founds_in_coords}")
+        log.warning(
+            f"Stations not found in websirenes coordinates: {not_founds_in_coords}"
+        )
         return not_founds_in_coords
 
     def _merge_by_name(
@@ -99,7 +103,9 @@ class WebSirenesKeys:
         files = self.websirenes_parser.list_files()
         not_found_in_coords = self._not_founds_in_coords()
         log.info(f"Found {len(not_found_in_coords)} stations not found in coordinates")
-        log.info(f"Processing {len(files) - len(not_found_in_coords)} files to build keys")
+        log.info(
+            f"Processing {len(files) - len(not_found_in_coords)} files to build keys"
+        )
         minimum_date = pd.Timestamp.max
         maximum_date = pd.Timestamp.min
         for file in tqdm(files):
@@ -117,11 +123,15 @@ class WebSirenesKeys:
 
             df = self._merge_by_name(self.websirenes_coords, df)
             self._write_key(df)
-        log.info(f"""
+        log.info(
+            f"""
             Minimum date: {minimum_date}
             Maximum date: {maximum_date}
-        """)
-        log.success(f"Websirenes keys built successfully in {self.websirenes_keys_path}")
+        """
+        )
+        log.success(
+            f"Websirenes keys built successfully in {self.websirenes_keys_path}"
+        )
 
         minimum_maximum_dates_path = (
             self.websirenes_keys_path / "minimum_maximum_dates_websirenes.json"
@@ -136,4 +146,6 @@ class WebSirenesKeys:
                 indent=4,
             )
 
-        log.success(f"Minimum and maximum dates written to {minimum_maximum_dates_path}")
+        log.success(
+            f"Minimum and maximum dates written to {minimum_maximum_dates_path}"
+        )

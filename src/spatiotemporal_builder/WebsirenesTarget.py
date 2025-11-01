@@ -96,11 +96,17 @@ class SpatioTemporalFeatures:
             f"Spatial resolution: {self.sorted_latitudes_ascending[1] - self.sorted_latitudes_ascending[0]:.2f} degrees"
         )
 
-    def _write_features(self, features: npt.NDArray[np.float64], timestamp: pd.Timestamp):
-        features_filename = self.features_path / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+    def _write_features(
+        self, features: npt.NDArray[np.float64], timestamp: pd.Timestamp
+    ):
+        features_filename = (
+            self.features_path / f"{timestamp.strftime('%Y_%m_%d_%H')}_features.npy"
+        )
         np.save(features_filename, features)
 
-    def _get_grid_lats_lons(self) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
+    def _get_grid_lats_lons(
+        self,
+    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32]]:
         ds = self._get_era5_single_levels_dataset(2009, 6)
         lats = ds.coords["latitude"].values
         lons = ds.coords["longitude"].values
@@ -162,7 +168,11 @@ class SpatioTemporalFeatures:
         lon_index: int,
     ):
         if settings.only_ERA5:
-            return self.websirenes_square.get_era5_single_levels_precipitation_in_square(square, ds)
+            return (
+                self.websirenes_square.get_era5_single_levels_precipitation_in_square(
+                    square, ds
+                )
+            )
 
         websirenes_keys = self.websirenes_square.get_keys_in_square(square, keys)
 
@@ -177,7 +187,9 @@ class SpatioTemporalFeatures:
             square, websirenes_keys, timestamp, ds
         )
 
-        tp_inmet = self.inmet_square.get_precipitation_in_square(square, inmet_keys, timestamp, ds)
+        tp_inmet = self.inmet_square.get_precipitation_in_square(
+            square, inmet_keys, timestamp, ds
+        )
 
         tp_alertario = self.alertario_square.get_precipitation_in_square(
             square, alertario_keys, timestamp, ds
@@ -203,7 +215,10 @@ class SpatioTemporalFeatures:
             for j, lon in enumerate(left_right_lons):
                 # O(logn), uses bisect
                 square = get_square(
-                    lat, lon, self.sorted_latitudes_ascending, self.sorted_longitudes_ascending
+                    lat,
+                    lon,
+                    self.sorted_latitudes_ascending,
+                    self.sorted_longitudes_ascending,
                 )
 
                 if square is None:
@@ -214,8 +229,10 @@ class SpatioTemporalFeatures:
                 )
 
                 # O(4) ~ O(1)
-                r1000, r700, r200 = self.websirenes_square.get_relative_humidity_in_square(
-                    square, ds_pressure_levels
+                r1000, r700, r200 = (
+                    self.websirenes_square.get_relative_humidity_in_square(
+                        square, ds_pressure_levels
+                    )
                 )
 
                 # O(4) ~ O(1), all these below are the O(square)
@@ -268,8 +285,12 @@ class SpatioTemporalFeatures:
         bottom_row_pressure_levels = ds_pressure_levels.sel(latitude=min(top_down_lats))
         bottom_row_single_levels = ds_single_levels.sel(latitude=min(top_down_lats))
 
-        right_column_pressure_levels = ds_pressure_levels.sel(longitude=max(left_right_lons))
-        right_column_single_levels = ds_single_levels.sel(longitude=max(left_right_lons))
+        right_column_pressure_levels = ds_pressure_levels.sel(
+            longitude=max(left_right_lons)
+        )
+        right_column_single_levels = ds_single_levels.sel(
+            longitude=max(left_right_lons)
+        )
 
         for j, lon in enumerate(left_right_lons):
             features[-1, j] = [
@@ -287,16 +308,22 @@ class SpatioTemporalFeatures:
                 bottom_row_pressure_levels["v"].sel(pressure_level=700).values[j],
                 bottom_row_pressure_levels["v"].sel(pressure_level=1000).values[j],
                 np.sqrt(
-                    bottom_row_pressure_levels["u"].sel(pressure_level=200).values[j] ** 2
-                    + bottom_row_pressure_levels["v"].sel(pressure_level=200).values[j] ** 2
+                    bottom_row_pressure_levels["u"].sel(pressure_level=200).values[j]
+                    ** 2
+                    + bottom_row_pressure_levels["v"].sel(pressure_level=200).values[j]
+                    ** 2
                 ),
                 np.sqrt(
-                    bottom_row_pressure_levels["u"].sel(pressure_level=700).values[j] ** 2
-                    + bottom_row_pressure_levels["v"].sel(pressure_level=700).values[j] ** 2
+                    bottom_row_pressure_levels["u"].sel(pressure_level=700).values[j]
+                    ** 2
+                    + bottom_row_pressure_levels["v"].sel(pressure_level=700).values[j]
+                    ** 2
                 ),
                 np.sqrt(
-                    bottom_row_pressure_levels["u"].sel(pressure_level=1000).values[j] ** 2
-                    + bottom_row_pressure_levels["v"].sel(pressure_level=1000).values[j] ** 2
+                    bottom_row_pressure_levels["u"].sel(pressure_level=1000).values[j]
+                    ** 2
+                    + bottom_row_pressure_levels["v"].sel(pressure_level=1000).values[j]
+                    ** 2
                 ),
                 bottom_row_pressure_levels["w"].sel(pressure_level=200).values[j],
                 bottom_row_pressure_levels["w"].sel(pressure_level=700).values[j],
@@ -320,16 +347,28 @@ class SpatioTemporalFeatures:
                 right_column_pressure_levels["v"].sel(pressure_level=700).values[i],
                 right_column_pressure_levels["v"].sel(pressure_level=1000).values[i],
                 np.sqrt(
-                    right_column_pressure_levels["u"].sel(pressure_level=200).values[i] ** 2
-                    + right_column_pressure_levels["v"].sel(pressure_level=200).values[i] ** 2
+                    right_column_pressure_levels["u"].sel(pressure_level=200).values[i]
+                    ** 2
+                    + right_column_pressure_levels["v"]
+                    .sel(pressure_level=200)
+                    .values[i]
+                    ** 2
                 ),
                 np.sqrt(
-                    right_column_pressure_levels["u"].sel(pressure_level=700).values[i] ** 2
-                    + right_column_pressure_levels["v"].sel(pressure_level=700).values[i] ** 2
+                    right_column_pressure_levels["u"].sel(pressure_level=700).values[i]
+                    ** 2
+                    + right_column_pressure_levels["v"]
+                    .sel(pressure_level=700)
+                    .values[i]
+                    ** 2
                 ),
                 np.sqrt(
-                    right_column_pressure_levels["u"].sel(pressure_level=1000).values[i] ** 2
-                    + right_column_pressure_levels["v"].sel(pressure_level=1000).values[i] ** 2
+                    right_column_pressure_levels["u"].sel(pressure_level=1000).values[i]
+                    ** 2
+                    + right_column_pressure_levels["v"]
+                    .sel(pressure_level=1000)
+                    .values[i]
+                    ** 2
                 ),
                 right_column_pressure_levels["w"].sel(pressure_level=200).values[i],
                 right_column_pressure_levels["w"].sel(pressure_level=700).values[i],
@@ -354,8 +393,12 @@ class SpatioTemporalFeatures:
         ds_single_levels_month = self._get_era5_single_levels_dataset(year, month)
         ds_pressure_levels_month = self._get_era5_pressure_levels_dataset(year, month)
 
-        ds_single_levels_time = ds_single_levels_month.sel(valid_time=time, method="nearest")
-        ds_pressure_levels_time = ds_pressure_levels_month.sel(valid_time=time, method="nearest")
+        ds_single_levels_time = ds_single_levels_month.sel(
+            valid_time=time, method="nearest"
+        )
+        ds_pressure_levels_time = ds_pressure_levels_month.sel(
+            valid_time=time, method="nearest"
+        )
 
         features = np.zeros(
             (
@@ -366,7 +409,9 @@ class SpatioTemporalFeatures:
             dtype=np.float64,
         )
 
-        self._process_grid(features, ds_single_levels_time, ds_pressure_levels_time, timestamp)
+        self._process_grid(
+            features, ds_single_levels_time, ds_pressure_levels_time, timestamp
+        )
         self._write_features(features, timestamp)
         ds_single_levels_time.close()
         ds_pressure_levels_time.close()
@@ -470,7 +515,11 @@ class SpatioTemporalFeatures:
             or all_cached
             or len(self.found_stations)
             == len(
-                list(self.websirenes_square.websirenes_keys.websirenes_keys_path.glob("*.parquet"))
+                list(
+                    self.websirenes_square.websirenes_keys.websirenes_keys_path.glob(
+                        "*.parquet"
+                    )
+                )
             )
         ), "Expected all websirenes stations to be found and processed"
 
@@ -483,26 +532,39 @@ class SpatioTemporalFeatures:
         assert (
             settings.only_ERA5
             or all_cached
-            or len(list(self.alertario_square.alertario_keys.alertario_keys_path.glob("*.parquet")))
+            or len(
+                list(
+                    self.alertario_square.alertario_keys.alertario_keys_path.glob(
+                        "*.parquet"
+                    )
+                )
+            )
         ), "Expected all alertario stations to be found and processed"
 
         if not all_cached and not settings.only_ERA5:
-            log.success(f"""
+            log.success(
+                f"""
                 All stations processed:
                 Websirenes: {len(self.found_stations)} files
                 INMET: {len(self.found_stations_inmet)} files
                 Alertario: {len(self.found_stations_alertario)} files
                 Total cells with station: {len(self.stations_cells)}
-            """)
+            """
+            )
 
         if len(self.stations_cells) > 0:
-            np.save(self.features_path / "stations_cells.npy", list(self.stations_cells))
+            np.save(
+                self.features_path / "stations_cells.npy", list(self.stations_cells)
+            )
             log.success(
                 f"set {self.stations_cells} file created in {self.features_path / 'stations_cells.npy'}"
             )
 
     def validate_timestamps(
-        self, min_timestamp: pd.Timestamp, max_timestamp: pd.Timestamp, ignored_months: list[int]
+        self,
+        min_timestamp: pd.Timestamp,
+        max_timestamp: pd.Timestamp,
+        ignored_months: list[int],
     ) -> int:
         timestamps = pd.date_range(start=min_timestamp, end=max_timestamp, freq="h")
         not_found = []
@@ -518,18 +580,21 @@ class SpatioTemporalFeatures:
             month = timestamp.month
             day = timestamp.day
             hour = timestamp.hour
-            file = self.features_path / f"{year:04}_{month:02}_{day:02}_{hour:02}_features.npy"
+            file = (
+                self.features_path
+                / f"{year:04}_{month:02}_{day:02}_{hour:02}_features.npy"
+            )
 
             if not Path(file).exists():
                 not_found.append(timestamp)
                 continue
 
             features = np.load(file)
-            assert (
-                features.shape[0] == len(self.sorted_latitudes_ascending)
+            assert features.shape[0] == len(
+                self.sorted_latitudes_ascending
             ), f"shape[0] should be {len(self.sorted_latitudes_ascending)} but is {features.shape[0]}"
-            assert (
-                features.shape[1] == len(self.sorted_longitudes_ascending)
+            assert features.shape[1] == len(
+                self.sorted_longitudes_ascending
             ), f"shape[1] should be {len(self.sorted_longitudes_ascending)} but is {features.shape[1]}"
             assert features.shape[2] == len(
                 self.features_tuple
@@ -556,13 +621,13 @@ class SpatioTemporalFeatures:
             Ignoring months={ignored_months}
             Total timestamps={total_timestamps}
             Shape: {features.shape}
-            All rows have at least one non-zero value: {np.all(
-                np.any(features != 0, axis=(1, 2))
-            )}
+            All rows have at least one non-zero value: {
+                np.all(np.any(features != 0, axis=(1, 2)))
+            }
             """
         )
         return total_timestamps
 
 
 if __name__ == "__main__":
-    ""
+    """"""

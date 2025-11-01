@@ -11,8 +11,8 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from sklearn.impute import KNNImputer
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
@@ -48,18 +48,19 @@ def _ensure_list(value, default=None):
         return list(value)
     return [value]
 
+
 STATION_SYSTEM_CONFIG_DIR = PROJECT_ROOT / "config" / "station_systems"
 
 STATION_SYSTEM_CONFIG = {
-    'inmet': {
-        'ids': set(globals.INMET_WEATHER_STATION_IDS),
-        'data_dir': globals.WS_INMET_DATA_DIR,
-        'config_path': STATION_SYSTEM_CONFIG_DIR / "inmet.json",
+    "inmet": {
+        "ids": set(globals.INMET_WEATHER_STATION_IDS),
+        "data_dir": globals.WS_INMET_DATA_DIR,
+        "config_path": STATION_SYSTEM_CONFIG_DIR / "inmet.json",
     },
-    'alertario': {
-        'ids': set(globals.ALERTARIO_WEATHER_STATION_IDS),
-        'data_dir': globals.WS_ALERTARIO_DATA_DIR,
-        'config_path': STATION_SYSTEM_CONFIG_DIR / "alertario.json",
+    "alertario": {
+        "ids": set(globals.ALERTARIO_WEATHER_STATION_IDS),
+        "data_dir": globals.WS_ALERTARIO_DATA_DIR,
+        "config_path": STATION_SYSTEM_CONFIG_DIR / "alertario.json",
     },
 }
 
@@ -69,10 +70,12 @@ def load_station_system_settings(system_name: str) -> dict:
     system_name = system_name.lower()
     if system_name not in STATION_SYSTEM_CONFIG:
         raise KeyError(f"Unknown station system '{system_name}'.")
-    config_path = STATION_SYSTEM_CONFIG[system_name]['config_path']
+    config_path = STATION_SYSTEM_CONFIG[system_name]["config_path"]
     if not config_path.exists():
-        raise FileNotFoundError(f"Configuration file not found for system '{system_name}' at '{config_path}'.")
-    with config_path.open('r', encoding='utf-8') as config_file:
+        raise FileNotFoundError(
+            f"Configuration file not found for system '{system_name}' at '{config_path}'."
+        )
+    with config_path.open("r", encoding="utf-8") as config_file:
         return json.load(config_file)
 
 
@@ -112,7 +115,9 @@ def apply_imputation(df: pd.DataFrame, imputation_config: dict) -> pd.DataFrame:
     imputation_config = imputation_config or {}
     strategy = imputation_config.get("strategy", "knn")
     if not isinstance(strategy, str):
-        logging.warning(f"Invalid imputation strategy '{strategy}'. Skipping imputation.")
+        logging.warning(
+            f"Invalid imputation strategy '{strategy}'. Skipping imputation."
+        )
         return df
     strategy = strategy.lower()
     params = imputation_config.get("params", {}) or {}
@@ -160,7 +165,9 @@ def apply_quality_checks(
         if not check_type:
             continue
         columns = _ensure_list(check.get("columns"), default=predictor_columns)
-        actions = _ensure_list(check.get("actions") or check.get("strategy"), default=["flag"])
+        actions = _ensure_list(
+            check.get("actions") or check.get("strategy"), default=["flag"]
+        )
         actions = [action.lower() for action in actions]
         if not actions:
             continue
@@ -168,11 +175,15 @@ def apply_quality_checks(
         # compute parameters common across columns depending on check type
         for column in columns:
             if column not in df.columns:
-                logging.debug(f"Quality check '{check_type}' skipped for missing column '{column}'.")
+                logging.debug(
+                    f"Quality check '{check_type}' skipped for missing column '{column}'."
+                )
                 continue
             series = df[column]
             if not pd.api.types.is_numeric_dtype(series):
-                logging.debug(f"Quality check '{check_type}' skipped for non-numeric column '{column}'.")
+                logging.debug(
+                    f"Quality check '{check_type}' skipped for non-numeric column '{column}'."
+                )
                 continue
 
             mask = pd.Series(False, index=df.index)
@@ -207,30 +218,42 @@ def apply_quality_checks(
                 mask = zscores.abs() > threshold
                 params_summary = {"threshold": threshold}
             else:
-                logging.warning(f"Unknown quality check type '{check_type}' for column '{column}'. Skipping.")
+                logging.warning(
+                    f"Unknown quality check type '{check_type}' for column '{column}'. Skipping."
+                )
                 continue
 
             if not mask.any():
-                records.append({
-                    "check": check.get("name") or f"{check_type}_{idx}",
-                    "type": check_type,
-                    "column": column,
-                    "flags": 0,
-                    "fraction": 0.0,
-                    "actions": actions,
-                    "params": params_summary,
-                })
+                records.append(
+                    {
+                        "check": check.get("name") or f"{check_type}_{idx}",
+                        "type": check_type,
+                        "column": column,
+                        "flags": 0,
+                        "fraction": 0.0,
+                        "actions": actions,
+                        "params": params_summary,
+                    }
+                )
                 continue
 
             if "clip" in actions and check_type in {"bounds", "iqr"}:
                 if "min" in params_summary and params_summary["min"] is not None:
-                    df.loc[series < params_summary["min"], column] = params_summary["min"]
+                    df.loc[series < params_summary["min"], column] = params_summary[
+                        "min"
+                    ]
                 if "max" in params_summary and params_summary["max"] is not None:
-                    df.loc[series > params_summary["max"], column] = params_summary["max"]
+                    df.loc[series > params_summary["max"], column] = params_summary[
+                        "max"
+                    ]
                 if "lower" in params_summary and params_summary["lower"] is not None:
-                    df.loc[series < params_summary["lower"], column] = params_summary["lower"]
+                    df.loc[series < params_summary["lower"], column] = params_summary[
+                        "lower"
+                    ]
                 if "upper" in params_summary and params_summary["upper"] is not None:
-                    df.loc[series > params_summary["upper"], column] = params_summary["upper"]
+                    df.loc[series > params_summary["upper"], column] = params_summary[
+                        "upper"
+                    ]
 
             if "set_nan" in actions:
                 df.loc[mask, column] = np.nan
@@ -248,16 +271,18 @@ def apply_quality_checks(
                     if flag_column not in new_predictor_columns:
                         new_predictor_columns.append(flag_column)
 
-            records.append({
-                "check": check.get("name") or f"{check_type}_{idx}",
-                "type": check_type,
-                "column": column,
-                "flags": int(mask.sum()),
-                "fraction": float(mask.sum()) / row_count if row_count else 0.0,
-                "actions": actions,
-                "flag_column": flag_column,
-                "params": params_summary,
-            })
+            records.append(
+                {
+                    "check": check.get("name") or f"{check_type}_{idx}",
+                    "type": check_type,
+                    "column": column,
+                    "flags": int(mask.sum()),
+                    "fraction": float(mask.sum()) / row_count if row_count else 0.0,
+                    "actions": actions,
+                    "flag_column": flag_column,
+                    "params": params_summary,
+                }
+            )
 
     quality_output = {
         "checks": records,
@@ -282,8 +307,13 @@ def build_quality_report(
     target_column: str,
     quality_checks=None,
 ) -> dict:
-    report_fields = _ensure_list(_safe_get(report_config, "fields"), default=["missing_fraction", "min", "max"])
-    summary_keys = _ensure_list(_safe_get(report_config, "summary"), default=["rows", "columns", "missing_fraction"])
+    report_fields = _ensure_list(
+        _safe_get(report_config, "fields"), default=["missing_fraction", "min", "max"]
+    )
+    summary_keys = _ensure_list(
+        _safe_get(report_config, "summary"),
+        default=["rows", "columns", "missing_fraction"],
+    )
 
     num_rows = int(report_df.shape[0])
     num_columns = int(report_df.shape[1])
@@ -304,18 +334,26 @@ def build_quality_report(
                 column_metrics[field] = int(missing_counts_before[column])
             elif field == "imputed_fraction":
                 column_metrics[field] = (
-                    float(missing_counts_before[column]) / num_rows if (num_rows and imputation_applied) else 0.0
+                    float(missing_counts_before[column]) / num_rows
+                    if (num_rows and imputation_applied)
+                    else 0.0
                 )
             elif field == "imputed_count":
-                column_metrics[field] = int(missing_counts_before[column]) if imputation_applied else 0
+                column_metrics[field] = (
+                    int(missing_counts_before[column]) if imputation_applied else 0
+                )
             elif field == "min":
                 column_metrics[field] = _nan_to_none(report_df[column].min(skipna=True))
             elif field == "max":
                 column_metrics[field] = _nan_to_none(report_df[column].max(skipna=True))
             elif field == "mean":
-                column_metrics[field] = _nan_to_none(report_df[column].mean(skipna=True))
+                column_metrics[field] = _nan_to_none(
+                    report_df[column].mean(skipna=True)
+                )
             elif field == "median":
-                column_metrics[field] = _nan_to_none(report_df[column].median(skipna=True))
+                column_metrics[field] = _nan_to_none(
+                    report_df[column].median(skipna=True)
+                )
             elif field == "std":
                 column_metrics[field] = _nan_to_none(report_df[column].std(skipna=True))
         per_column_metrics[column] = column_metrics
@@ -368,7 +406,9 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     imputation_config = preprocessing_settings.get("imputation", {})
     quality_config = system_settings.get("quality", {})
     quality_enabled = _is_truthy(_safe_get(quality_config, "enabled", False))
-    include_flag_columns = _is_truthy(_safe_get(quality_config, "include_flag_columns", True))
+    include_flag_columns = _is_truthy(
+        _safe_get(quality_config, "include_flag_columns", True)
+    )
     flag_suffix = quality_config.get("flag_column_suffix", "_flag")
     report_config = system_settings.get("report", {})
     report_enabled = _is_truthy(_safe_get(report_config, "enabled", False))
@@ -381,20 +421,24 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
 
     #
     # Add index to dataframe using the timestamps.
-    logging.info(f"Adding index to dataframe using the timestamps...")
+    logging.info("Adding index to dataframe using the timestamps...")
     df = util.add_datetime_index(ws_id, df)
     logging.info(df.head())
     logging.info("Done!\n")
 
     #
     # Standardize column names.
-    logging.info(f"Standardizing column names...")
+    logging.info("Standardizing column names...")
     column_name_mapping = system_settings.get("column_mapping", {})
     if not column_name_mapping:
-        raise ValueError(f"No column mapping provided for station system '{station_system}'.")
+        raise ValueError(
+            f"No column mapping provided for station system '{station_system}'."
+        )
     missing_columns = [col for col in column_name_mapping if col not in df.columns]
     if missing_columns:
-        logging.warning(f"The following columns from the mapping are missing in the datasource: {missing_columns}")
+        logging.warning(
+            f"The following columns from the mapping are missing in the datasource: {missing_columns}"
+        )
     column_names = column_name_mapping.keys()
     df = util.get_dataframe_with_selected_columns(df, column_names)
     df = util.rename_dataframe_column_names(df, column_name_mapping)
@@ -407,7 +451,9 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     if not (predictor_names and target_name):
         variables = util.get_relevant_variables(ws_id)
         if not variables:
-            raise ValueError(f"Could not determine predictors/target for station '{ws_id}'.")
+            raise ValueError(
+                f"Could not determine predictors/target for station '{ws_id}'."
+            )
         predictor_names, target_name = variables
     logging.info(f"Predictors: {predictor_names}")
     logging.info(f"Target: {target_name}")
@@ -415,12 +461,16 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
 
     #
     # Drop observations in which the target variable is not defined.
-    logging.info(f"Dropping entries with null target...")
+    logging.info("Dropping entries with null target...")
     n_obser_before_drop = len(df)
     df = df[df[target_name].notna()]
     n_obser_after_drop = len(df)
-    logging.info(f"Number of observations before/after dropping entries with undefined target value: {n_obser_before_drop}/{n_obser_after_drop}.")
-    logging.info(f"Range of timestamps after dropping entries with undefined target value: [{min(df.index)}, {max(df.index)}]")
+    logging.info(
+        f"Number of observations before/after dropping entries with undefined target value: {n_obser_before_drop}/{n_obser_after_drop}."
+    )
+    logging.info(
+        f"Range of timestamps after dropping entries with undefined target value: [{min(df.index)}, {max(df.index)}]"
+    )
     logging.info(df.head())
     logging.info("Done!\n")
 
@@ -428,7 +478,9 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     quality_added_predictors = []
     if quality_enabled:
         logging.info("Applying quality checks before feature engineering...")
-        pre_quality_columns = [column for column in predictor_names if column in df.columns]
+        pre_quality_columns = [
+            column for column in predictor_names if column in df.columns
+        ]
         df, quality_output = apply_quality_checks(
             df=df,
             quality_config=quality_config,
@@ -439,7 +491,8 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
         quality_summary = quality_output.get("checks", [])
         if include_flag_columns:
             quality_added_predictors = [
-                column for column in quality_output.get("new_columns", [])
+                column
+                for column in quality_output.get("new_columns", [])
                 if column in df.columns
             ]
         logging.info("Quality checks completed.\n")
@@ -447,7 +500,7 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     #
     # Create wind-related features (U and V components of wind observations).
     if add_wind_features:
-        logging.info(f"Creating wind-related features...")
+        logging.info("Creating wind-related features...")
         df = util.add_wind_related_features(ws_id, df)
         logging.info(df.head())
         logging.info("Done!\n")
@@ -457,28 +510,38 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     #
     # Create time-related features (sin and cos components)
     if add_hour_features:
-        logging.info(f"Creating time-related features...")
+        logging.info("Creating time-related features...")
         df = util.add_hour_related_features(df)
         logging.info(df.head())
         logging.info("Done!\n")
     else:
         logging.info("Skipping time-related feature generation as configured.\n")
 
-    available_predictors = [column for column in predictor_names if column in df.columns]
+    available_predictors = [
+        column for column in predictor_names if column in df.columns
+    ]
     if include_flag_columns and quality_added_predictors:
         for column in quality_added_predictors:
             if column not in available_predictors:
                 available_predictors.append(column)
     missing_predictors = sorted(set(predictor_names) - set(available_predictors))
     if missing_predictors:
-        logging.warning(f"The following predictors are missing and will be ignored: {missing_predictors}")
+        logging.warning(
+            f"The following predictors are missing and will be ignored: {missing_predictors}"
+        )
     if not available_predictors:
-        raise ValueError(f"No predictor columns were found after preprocessing for station '{ws_id}'.")
+        raise ValueError(
+            f"No predictor columns were found after preprocessing for station '{ws_id}'."
+        )
     if target_name not in df.columns:
-        raise KeyError(f"Target column '{target_name}' not found after preprocessing for station '{ws_id}'.")
+        raise KeyError(
+            f"Target column '{target_name}' not found after preprocessing for station '{ws_id}'."
+        )
     df = df[available_predictors + [target_name]]
     report_reference_df = df[available_predictors].copy() if report_enabled else None
-    missing_counts_before = report_reference_df.isna().sum() if report_reference_df is not None else None
+    missing_counts_before = (
+        report_reference_df.isna().sum() if report_reference_df is not None else None
+    )
 
     #
     # Scale the data. This step is necessary here due to the next step, which deals with missing values.
@@ -487,22 +550,34 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     target_column = df[target_name]
     predictors_df = df.drop(columns=[target_name], axis=1).copy()
     if normalize_predictors:
-        scaler_type = (scaler_config.get("type") or "minmax") if isinstance(scaler_config, dict) else "minmax"
+        scaler_type = (
+            (scaler_config.get("type") or "minmax")
+            if isinstance(scaler_config, dict)
+            else "minmax"
+        )
         logging.info(f"Applying '{scaler_type}' scaling...")
         predictors_df = apply_scaling(predictors_df, scaler_config)
         logging.info("Done!\n")
     else:
         logging.info("Skipping normalization as configured.\n")
 
-    # 
+    #
     # Imput missing values on some features.
     if impute_missing_values:
-        strategy = (imputation_config.get("strategy") or "knn") if isinstance(imputation_config, dict) else "knn"
+        strategy = (
+            (imputation_config.get("strategy") or "knn")
+            if isinstance(imputation_config, dict)
+            else "knn"
+        )
         logging.info(f"Applying '{strategy}' imputation...")
-        percentage_missing = (predictors_df.isna().mean() * 100).mean() # Compute the percentage of missing values
-        logging.info(f"There are {predictors_df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...")
+        percentage_missing = (
+            predictors_df.isna().mean() * 100
+        ).mean()  # Compute the percentage of missing values
+        logging.info(
+            f"There are {predictors_df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them..."
+        )
         predictors_df = apply_imputation(predictors_df, imputation_config)
-        assert (not predictors_df.isnull().values.any().any())
+        assert not predictors_df.isnull().values.any().any()
         logging.info("Done!\n")
     else:
         logging.info("Skipping missing-value imputation as configured.\n")
@@ -522,12 +597,16 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     #
     # Save preprocessed data to a parquet file.
     filename_and_extension = util.get_filename_and_extension(ws_filename)
-    filename = output_folder + filename_and_extension[0] + '_preprocessed.parquet.gzip'
+    filename = output_folder + filename_and_extension[0] + "_preprocessed.parquet.gzip"
     logging.info(f"Saving preprocessed data to {filename}...")
-    df.to_parquet(filename, compression='gzip')
+    df.to_parquet(filename, compression="gzip")
     logging.info("Done!\n")
 
-    if report_enabled and report_reference_df is not None and missing_counts_before is not None:
+    if (
+        report_enabled
+        and report_reference_df is not None
+        and missing_counts_before is not None
+    ):
         report_payload = build_quality_report(
             station_id=ws_id,
             station_system=station_system,
@@ -543,49 +622,69 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
             target_column=target_name,
             quality_checks=quality_summary,
         )
-        report_filename = output_folder + filename_and_extension[0] + '_preprocess_report.json'
-        with open(report_filename, 'w', encoding='utf-8') as report_file:
+        report_filename = (
+            output_folder + filename_and_extension[0] + "_preprocess_report.json"
+        )
+        with open(report_filename, "w", encoding="utf-8") as report_file:
             json.dump(report_payload, report_file, indent=2, ensure_ascii=False)
         logging.info(f"Quality report saved to {report_filename}\n")
 
     logging.info("Done it all!\n")
 
+
 def main(argv):
-    parser = argparse.ArgumentParser(description='Preprocess weather station data.')
-    parser.add_argument('-s', '--station_id', 
-                        required=True, 
-                        choices=globals.INMET_WEATHER_STATION_IDS + globals.ALERTARIO_WEATHER_STATION_IDS, 
-                        help='ID of the weather station to preprocess data for.')
-    parser.add_argument('-y', '--station_system',
-                        choices=sorted(STATION_SYSTEM_CONFIG.keys()),
-                        type=str.lower,
-                        help='System of the weather station (e.g., INMET, AlertaRio).')
+    parser = argparse.ArgumentParser(description="Preprocess weather station data.")
+    parser.add_argument(
+        "-s",
+        "--station_id",
+        required=True,
+        choices=globals.INMET_WEATHER_STATION_IDS
+        + globals.ALERTARIO_WEATHER_STATION_IDS,
+        help="ID of the weather station to preprocess data for.",
+    )
+    parser.add_argument(
+        "-y",
+        "--station_system",
+        choices=sorted(STATION_SYSTEM_CONFIG.keys()),
+        type=str.lower,
+        help="System of the weather station (e.g., INMET, AlertaRio).",
+    )
     args = parser.parse_args(argv[1:])
-    
+
     station_id = args.station_id
     station_system = args.station_system
 
     fmt = "[%(levelname)s] %(funcName)s():%(lineno)i: %(message)s"
-    logging.basicConfig(level=logging.DEBUG, format = fmt)
+    logging.basicConfig(level=logging.DEBUG, format=fmt)
 
     if station_system:
         system_config = STATION_SYSTEM_CONFIG[station_system]
-        if station_id not in system_config['ids']:
-            parser.error(f"Station {station_id} does not belong to the {station_system.upper()} system.")
-        ws_data_dir = system_config['data_dir']
+        if station_id not in system_config["ids"]:
+            parser.error(
+                f"Station {station_id} does not belong to the {station_system.upper()} system."
+            )
+        ws_data_dir = system_config["data_dir"]
     else:
         ws_data_dir = None
         for system_name, system_config in STATION_SYSTEM_CONFIG.items():
-            if station_id in system_config['ids']:
+            if station_id in system_config["ids"]:
                 station_system = system_name
-                ws_data_dir = system_config['data_dir']
+                ws_data_dir = system_config["data_dir"]
                 break
         if ws_data_dir is None:
             parser.error(f"Invalid station identifier: {station_id}")
 
-    print(f'Preprocessing data coming from weather station {station_id} (system: {station_system.upper()})')
+    print(
+        f"Preprocessing data coming from weather station {station_id} (system: {station_system.upper()})"
+    )
     ws_filename = ws_data_dir + args.station_id + ".parquet"
-    preprocess_ws(ws_id=station_id, ws_filename=ws_filename, output_folder=ws_data_dir, station_system=station_system)
+    preprocess_ws(
+        ws_id=station_id,
+        ws_filename=ws_filename,
+        output_folder=ws_data_dir,
+        station_system=station_system,
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main(sys.argv)

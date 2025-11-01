@@ -11,7 +11,7 @@ SUMARE_DATA_DIR = ".data/radar_sumare"
 GOES16_DATA_DIR = "./data/goes16/CMI/"
 
 # Directory to store the extracted features from GOES-16 data
-GOES16_FEATURES_DIR = './data/goes16/features/'
+GOES16_FEATURES_DIR = "./data/goes16/features/"
 
 # Atmospheric sounding datasource directory
 NWP_DATA_DIR = "./data/NWP/"
@@ -19,66 +19,66 @@ NWP_DATA_DIR = "./data/NWP/"
 # Atmospheric sounding datasource directory
 AS_DATA_DIR = "./data/as/"
 
-#GOES16/DSI directory
+# GOES16/DSI directory
 DSI_DATA_DIR = "./data/goes16/DSI"
 
 # GOES16/TPW directory
 TPW_DATA_DIR = "./data/goes16/wsoi"
 
 # Directory to store the train/val/test datasets for each weather station of interest
-DATASETS_DIR = './data/datasets/'
+DATASETS_DIR = "./data/datasets/"
 
 # Directory to store the generated models and their corresponding reports
-MODELS_DIR = './models/'
+MODELS_DIR = "./models/"
 
 # see https://portal.inmet.gov.br/paginas/catalogoaut
 INMET_WEATHER_STATION_IDS = (
-    'A601', # Seropédica
-    'A602', # Marambaia
-    'A621', # Vila militar
-    'A627', # Niteroi
-    'A636', # Jacarepagua
-    'A652'  # Forte de Copacabana
+    "A601",  # Seropédica
+    "A602",  # Marambaia
+    "A621",  # Vila militar
+    "A627",  # Niteroi
+    "A636",  # Jacarepagua
+    "A652",  # Forte de Copacabana
 )
 
 ALERTARIO_GAUGE_STATION_IDS = (
-                         'anchieta', 
-                         'av_brasil_mendanha', 
-                         'bangu', 
-                         'barrinha', 
-                         'campo_grande', 
-                         'cidade_de_deus', 
-                         'copacabana', 
-                         'grajau_jacarepagua', 
-                         'grajau', 
-                         'grande_meier', 
-                         'grota_funda', 
-                         'ilha_do_governador', 
-                         'laranjeiras', 
-                         'madureira', 
-                         'penha', 
-                         'piedade', 
-                         'recreio', 
-                         'rocinha',
-                         'santa_teresa',
-                         'saude', 
-                         'sepetiba', 
-                         'tanque', 
-                         'tijuca_muda', 
-                         'tijuca', 
-                         'urca',
-                         'alto_da_boa_vista', #**
-                         'iraja', #**
-                         'jardim_botanico', #**
-                         'riocentro', #**
-                         'santa_cruz', #**
-                         'vidigal' #**
-                         )
+    "anchieta",
+    "av_brasil_mendanha",
+    "bangu",
+    "barrinha",
+    "campo_grande",
+    "cidade_de_deus",
+    "copacabana",
+    "grajau_jacarepagua",
+    "grajau",
+    "grande_meier",
+    "grota_funda",
+    "ilha_do_governador",
+    "laranjeiras",
+    "madureira",
+    "penha",
+    "piedade",
+    "recreio",
+    "rocinha",
+    "santa_teresa",
+    "saude",
+    "sepetiba",
+    "tanque",
+    "tijuca_muda",
+    "tijuca",
+    "urca",
+    "alto_da_boa_vista",  # **
+    "iraja",  # **
+    "jardim_botanico",  # **
+    "riocentro",  # **
+    "santa_cruz",  # **
+    "vidigal",  # **
+)
 
 ALERTARIO_WEATHER_STATION_IDS = (
-                         'guaratiba', #**
-                         'sao_cristovao' #**
-                         )
+    "guaratiba",  # **
+    "sao_cristovao",  # **
+)
 
 # hyper_params_dict_bc = {
 #     "N_EPOCHS" : 3500,

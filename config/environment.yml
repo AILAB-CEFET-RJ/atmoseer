@@ -26,8 +26,10 @@ dependencies:
   - pip
   - tqdm
   - pip:
+    - black
     - boto3
+    - pre-commit
+    - ruff
     - torchvision
-
 
 

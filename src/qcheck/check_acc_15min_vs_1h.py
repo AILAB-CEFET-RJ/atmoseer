@@ -9,7 +9,9 @@ from tqdm import tqdm
 
 
 class Websirene1h15mQualityCheck:
-    def _check_websirenes_keys_exists(self, websirene_key: str, fn_disabled=True) -> str:
+    def _check_websirenes_keys_exists(
+        self, websirene_key: str, fn_disabled=True
+    ) -> str:
         if fn_disabled:
             return websirene_key
 
@@ -17,15 +19,21 @@ class Websirene1h15mQualityCheck:
             current_dir = Path.cwd()
             websirenes_keys_dir = current_dir / "websirenes_keys"
             if not websirenes_keys_dir.exists():
-                raise FileNotFoundError("websirenes_keys folder not found in the current directory")
+                raise FileNotFoundError(
+                    "websirenes_keys folder not found in the current directory"
+                )
 
             parquet_files = list(websirenes_keys_dir.glob("*.parquet"))
             if not parquet_files or not len(parquet_files) > 0:
-                raise FileNotFoundError("No .parquet files found in websirenes_keys folder")
+                raise FileNotFoundError(
+                    "No .parquet files found in websirenes_keys folder"
+                )
 
             websirene_key_path = websirenes_keys_dir / websirene_key
             if not websirene_key_path.exists():
-                raise FileNotFoundError(f"{websirene_key} not found in websirenes_keys folder")
+                raise FileNotFoundError(
+                    f"{websirene_key} not found in websirenes_keys folder"
+                )
 
             filename = websirene_key_path.stem
             return filename
@@ -54,14 +62,18 @@ class Websirene1h15mQualityCheck:
 
         minimum_date = df.index.min().replace(minute=0, second=0, microsecond=0)
         minimum_date = (
-            minimum_date if minimum_date >= df.index.min() else minimum_date + timedelta(hours=1)
+            minimum_date
+            if minimum_date >= df.index.min()
+            else minimum_date + timedelta(hours=1)
         )
 
         print(f"Using minimum date: {minimum_date}")
 
         maximum_date = df.index.max().replace(minute=0, second=0, microsecond=0)
         maximum_date = (
-            maximum_date if maximum_date <= df.index.max() else maximum_date - timedelta(hours=1)
+            maximum_date
+            if maximum_date <= df.index.max()
+            else maximum_date - timedelta(hours=1)
         )
         print(f"Using maximum date: {maximum_date}")
 
@@ -75,7 +87,9 @@ class Websirene1h15mQualityCheck:
             time_upper_bound = hour
             time_lower_bound = hour - timedelta(minutes=45)
 
-            df_filtered = df[(df.index >= time_lower_bound) & (df.index <= time_upper_bound)]
+            df_filtered = df[
+                (df.index >= time_lower_bound) & (df.index <= time_upper_bound)
+            ]
 
             h01 = df[df.index == time_upper_bound]["h01"]
             m15 = df_filtered["m15"]

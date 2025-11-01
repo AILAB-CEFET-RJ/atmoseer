@@ -1,7 +1,7 @@
-import os
-import netCDF4 as nc
 import logging
-from pathlib import Path
+import os
+
+import netCDF4 as nc
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -11,6 +11,7 @@ if not logger.handlers:
     formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+
 
 def tamanho_particulas(pasta_entrada_canal7: str, pasta_saida: str):
     """
@@ -38,16 +39,22 @@ def tamanho_particulas(pasta_entrada_canal7: str, pasta_saida: str):
             continue
 
         try:
-            with nc.Dataset(arq_c7, 'r') as nc_in, nc.Dataset(arq_out, 'w') as out:
+            with nc.Dataset(arq_c7, "r") as nc_in, nc.Dataset(arq_out, "w") as out:
                 for nome_dim, dim in nc_in.dimensions.items():
-                    out.createDimension(nome_dim, len(dim) if not dim.isunlimited() else None)
+                    out.createDimension(
+                        nome_dim, len(dim) if not dim.isunlimited() else None
+                    )
 
                 for nome_var in nc_in.variables:
                     var_in = nc_in.variables[nome_var]
-                    var_out = out.createVariable(nome_var, var_in.datatype, var_in.dimensions)
-                    var_out.setncatts({k: var_in.getncattr(k) for k in var_in.ncattrs()})
+                    var_out = out.createVariable(
+                        nome_var, var_in.datatype, var_in.dimensions
+                    )
+                    var_out.setncatts(
+                        {k: var_in.getncattr(k) for k in var_in.ncattrs()}
+                    )
                     var_out[:] = var_in[:]
 
                 out.description = "TP: tamanho das partículas a partir do canal C07"
-        except Exception as e:
+        except Exception:
             logger.exception(f"Erro ao processar {ts}")

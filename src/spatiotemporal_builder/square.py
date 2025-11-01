@@ -42,12 +42,16 @@ def get_square(
         return None
     lat_bottom, lon_bottom = bottom_neighbor
 
-    right_neighbor = get_right_neighbor(lat_bottom, lon_bottom, sorted_longitudes_ascending)
+    right_neighbor = get_right_neighbor(
+        lat_bottom, lon_bottom, sorted_longitudes_ascending
+    )
     if right_neighbor is None:
         return None
     lat_right, lon_right = right_neighbor
 
-    upper_neighbor = get_upper_neighbor(lat_right, lon_right, sorted_latitudes_ascending)
+    upper_neighbor = get_upper_neighbor(
+        lat_right, lon_right, sorted_latitudes_ascending
+    )
     if upper_neighbor is None:
         return None
     lat_upper, lon_upper = upper_neighbor

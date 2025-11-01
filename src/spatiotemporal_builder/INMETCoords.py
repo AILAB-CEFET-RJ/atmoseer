@@ -30,7 +30,9 @@ def get_inmet_coords():
             "CD_SITUACAO": "estacao_desc",
         }
     )
-    inmet_coords = inmet_coords[["id_estacao", "estacao", "estacao_desc", "latitude", "longitude"]]
+    inmet_coords = inmet_coords[
+        ["id_estacao", "estacao", "estacao_desc", "latitude", "longitude"]
+    ]
     INMETCoordsSchema.validate(inmet_coords)
 
     inmet_coords["latitude"] = inmet_coords["latitude"].apply(lambda x: str(x))

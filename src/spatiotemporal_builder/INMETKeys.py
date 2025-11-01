@@ -38,7 +38,9 @@ class INMETKeys:
             if station_id not in existing_station_ids:
                 not_founds_in_coords.append({"name": file, "station_id": station_id})
         if not_founds_in_coords:
-            log.warning(f"Stations not found in websirenes coordinates: {not_founds_in_coords}")
+            log.warning(
+                f"Stations not found in websirenes coordinates: {not_founds_in_coords}"
+            )
         return not_founds_in_coords
 
     def _merge_by_id(
@@ -79,7 +81,9 @@ class INMETKeys:
         for file in tqdm(files):
             station_id = file.split("_")[0]
 
-            df = self.inmet_parser.get_dataframe(str(self.inmet_parser.inmet_path / file))
+            df = self.inmet_parser.get_dataframe(
+                str(self.inmet_parser.inmet_path / file)
+            )
 
             if df.index.min() < minimum_date:
                 minimum_date = df.index.min()
@@ -88,13 +92,17 @@ class INMETKeys:
 
             df = self._merge_by_id(self.inmet_coords, df, station_id)
             self._write_key(df)
-        log.info(f"""
+        log.info(
+            f"""
             Minimum date: {minimum_date}
             Maximum date: {maximum_date}
-        """)
+        """
+        )
         log.success(f"INMET keys built successfully in {self.inmet_keys_path}")
 
-        minimum_maximum_dates_path = self.inmet_keys_path / "minimum_maximum_dates_inmet.json"
+        minimum_maximum_dates_path = (
+            self.inmet_keys_path / "minimum_maximum_dates_inmet.json"
+        )
         with open(minimum_maximum_dates_path, "w") as f:
             json.dump(
                 {
@@ -105,4 +113,6 @@ class INMETKeys:
                 indent=4,
             )
 
-        log.success(f"Minimum and maximum dates written to {minimum_maximum_dates_path}")
+        log.success(
+            f"Minimum and maximum dates written to {minimum_maximum_dates_path}"
+        )

@@ -1,11 +1,12 @@
+import argparse
+import io
+import json
+import os
+import time
+from datetime import datetime
+
 import pandas as pd
 import requests
-import os
-import json
-import time
-import io
-import argparse
-from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from config import globals
@@ -13,6 +14,7 @@ from config import globals
 TOKEN_FILE = "./config/token_demaden.json"
 rota = "https://sws.cemaden.gov.br/PED/rest"
 rota_token = "https://sgaa.cemaden.gov.br/SGAA/rest"
+
 
 def get_token(email, senha):
     url = rota_token + "/controle-token/tokens"
@@ -24,10 +26,7 @@ def get_token(email, senha):
         if int(time.time()) - saved_at <= time_to_exp:
             return token_data.get("token", 0)
 
-    payload = {
-        "email": email,
-        "password": senha
-    }
+    payload = {"email": email, "password": senha}
     response = requests.post(url, json=payload)
     token_data = response.json()
     token_data["saved_at"] = int(time.time())
@@ -42,8 +41,10 @@ def get_estacoes(codibge, email, senha):
     url = rota + "/pcds-cadastro/estacoes"
     token = get_token(email, senha)
     headers = {"token": token}
-    tipos_est = requests.get(rota + "/pcds-tipo-estacao/sensores", headers=headers).json()
-    estacoes_tipo = {e['tipoestacao']: e for e in tipos_est}
+    tipos_est = requests.get(
+        rota + "/pcds-tipo-estacao/sensores", headers=headers
+    ).json()
+    estacoes_tipo = {e["tipoestacao"]: e for e in tipos_est}
 
     estacoes = []
     for cod in codibge:
@@ -53,7 +54,10 @@ def get_estacoes(codibge, email, senha):
         for est in response:
             cod_estacao = est.get("codestacao", 0)
             tipo_id = est.get("id_tipoestacao", None)
-            sensores = [s["sensordescricao"] for s in estacoes_tipo.get(tipo_id, {}).get("sensor", [])]
+            sensores = [
+                s["sensordescricao"]
+                for s in estacoes_tipo.get(tipo_id, {}).get("sensor", [])
+            ]
             estacoes.append((cod_estacao, sensores))
     return estacoes
 
@@ -67,7 +71,9 @@ def get_dados_estacoes(codibge, email, senha, inicio=None, fim=None, codestacao=
         estacoes = get_estacoes(codibge, email, senha)
 
     print("estações ", estacoes)
-    start_date = datetime.strptime(inicio, "%Y-%m-%d") if inicio else datetime(2015, 1, 1)
+    start_date = (
+        datetime.strptime(inicio, "%Y-%m-%d") if inicio else datetime(2015, 1, 1)
+    )
     end_date = datetime.strptime(fim, "%Y-%m-%d") if fim else datetime.today()
 
     for est in estacoes:
@@ -85,7 +91,7 @@ def get_dados_estacoes(codibge, email, senha, inicio=None, fim=None, codestacao=
                 "inicio": data_inicio,
                 "fim": data_fim,
                 "rede": "11",
-                "codigo": est[0]
+                "codigo": est[0],
             }
 
             print(f"Baixando: {data_inicio} até {data_fim} para estação {est[0]}")
@@ -96,7 +102,9 @@ def get_dados_estacoes(codibge, email, senha, inicio=None, fim=None, codestacao=
                     df = pd.read_csv(io.StringIO(response.text), sep=";", skiprows=1)
                     if df.empty:
                         continue
-                    df_pivot = df.pivot(index='datahora', columns='sensor', values='valor').reset_index()
+                    df_pivot = df.pivot(
+                        index="datahora", columns="sensor", values="valor"
+                    ).reset_index()
                     todos_dados.append(df_pivot)
                 except Exception as e:
                     print(f"Erro ao processar: {e}")
@@ -116,13 +124,21 @@ def get_dados_estacoes(codibge, email, senha, inicio=None, fim=None, codestacao=
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Baixa dados meteorológicos por código IBGE ou estação usando API do Cemaden.")
-    parser.add_argument("--ibge", nargs="+", help="Código(s) IBGE do município (ex: 3304557)")
-    parser.add_argument("--inicio", help="Data inicial no formato YYYY-MM-DD", default=None)
+    parser = argparse.ArgumentParser(
+        description="Baixa dados meteorológicos por código IBGE ou estação usando API do Cemaden."
+    )
+    parser.add_argument(
+        "--ibge", nargs="+", help="Código(s) IBGE do município (ex: 3304557)"
+    )
+    parser.add_argument(
+        "--inicio", help="Data inicial no formato YYYY-MM-DD", default=None
+    )
     parser.add_argument("--fim", help="Data final no formato YYYY-MM-DD", default=None)
     parser.add_argument("--email", required=True, help="E-mail de autenticação na API")
     parser.add_argument("--senha", required=True, help="Senha de autenticação na API")
-    parser.add_argument("--estacao", required=False, help="Código de uma estação específica (ex: A627)")
+    parser.add_argument(
+        "--estacao", required=False, help="Código de uma estação específica (ex: A627)"
+    )
 
     args = parser.parse_args()
 
@@ -136,7 +152,7 @@ def main():
         senha=args.senha,
         inicio=args.inicio,
         fim=args.fim,
-        codestacao=args.estacao
+        codestacao=args.estacao,
     )
 
 

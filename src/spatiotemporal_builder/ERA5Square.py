@@ -20,7 +20,13 @@ class Square(BaseModel):
 
 class ERA5Square:
     def _find_nearest_non_null(
-        self, ds_time: xr.Dataset, lat: float, lon: float, data_var: str, max_radius=1.0, step=0.1
+        self,
+        ds_time: xr.Dataset,
+        lat: float,
+        lon: float,
+        data_var: str,
+        max_radius=1.0,
+        step=0.1,
     ) -> float:
         # This function is useful for ERA5Land where we don't have ocean data
         log.warning(f"Finding nearest non-null value called for lat={lat}, lon={lon}")
@@ -34,7 +40,9 @@ class ERA5Square:
             lon_range = np.arange(lon - radius, lon + radius, step)
             for new_lat in lat_range:
                 for new_lon in lon_range:
-                    ds_lat_lon = ds_time.sel(latitude=new_lat, longitude=new_lon, method="nearest")
+                    ds_lat_lon = ds_time.sel(
+                        latitude=new_lat, longitude=new_lon, method="nearest"
+                    )
                     value = ds_lat_lon[data_var].values
                     if not np.isnan(value):
                         return float(value)
@@ -51,7 +59,12 @@ class ERA5Square:
     def get_relative_humidity_in_square(self, square: Square, ds_time: xr.Dataset):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        coords = [
+            square.top_left,
+            square.bottom_left,
+            square.bottom_right,
+            square.top_right,
+        ]
         corner_data = {
             corner: ds_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
@@ -71,15 +84,24 @@ class ERA5Square:
             results.append(value)
 
         assert len(results) == len(corners), f"len(results)={len(results)} != 4"
-        assert len(results[0]) == pressure_levels_length, f"len(results[0])={len(results[0])} != 3"
+        assert (
+            len(results[0]) == pressure_levels_length
+        ), f"len(results[0])={len(results[0])} != 3"
         corner_sums = [np.sum(values) for values in results]
         best_corner = corners[np.argmax(corner_sums)]
         return corner_data[best_corner]["r"].values
 
-    def get_temperature_in_square(self, square: Square, ds_time: xr.Dataset, verbose=False):
+    def get_temperature_in_square(
+        self, square: Square, ds_time: xr.Dataset, verbose=False
+    ):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        coords = [
+            square.top_left,
+            square.bottom_left,
+            square.bottom_right,
+            square.top_right,
+        ]
         corner_data = {
             corner: ds_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
@@ -98,13 +120,16 @@ class ERA5Square:
                 value = self._find_nearest_non_null(ds_time, lat, lon, "t")
             results.append(value)
         assert len(results) == len(corners), f"len(results)={len(results)} != 4"
-        assert len(results[0]) == pressure_levels_length, f"len(results[0])={len(results[0])} != 3"
+        assert (
+            len(results[0]) == pressure_levels_length
+        ), f"len(results[0])={len(results[0])} != 3"
 
         corner_sums = [np.sum(values) for values in results]
         best_corner = corners[np.argmax(corner_sums)]
 
         if verbose:
-            log.debug(f"""
+            log.debug(
+                f"""
                 corner_data:
                 Top left lat lon: ({corner_data["top_left"].latitude.values}, {corner_data["top_left"].longitude.values})
                 Top left temperature: {corner_data["top_left"]["t"].values}
@@ -124,14 +149,20 @@ class ERA5Square:
 
                 best_corner (most significant): {best_corner}
                 return: {corner_data[best_corner]["t"].values}
-            """)
+            """
+            )
 
         return corner_data[best_corner]["t"].values
 
     def get_u_component_in_square(self, square: Square, ds_time: xr.Dataset):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        coords = [
+            square.top_left,
+            square.bottom_left,
+            square.bottom_right,
+            square.top_right,
+        ]
         corner_data = {
             corner: ds_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
@@ -157,7 +188,12 @@ class ERA5Square:
     def get_v_component_in_square(self, square: Square, ds_time: xr.Dataset):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        coords = [
+            square.top_left,
+            square.bottom_left,
+            square.bottom_right,
+            square.top_right,
+        ]
         corner_data = {
             corner: ds_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
@@ -182,7 +218,12 @@ class ERA5Square:
     def get_w_component_in_square(self, square: Square, ds_time: xr.Dataset):
         # all these functions violate the dry principle, but I decided to repeat them to leave the code "open to change"
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        coords = [
+            square.top_left,
+            square.bottom_left,
+            square.bottom_right,
+            square.top_right,
+        ]
         corner_data = {
             corner: ds_time.sel(latitude=lat, longitude=lon)
             for corner, (lat, lon) in zip(corners, coords)
@@ -208,7 +249,12 @@ class ERA5Square:
         self, square: Square, era5_at_time: xr.Dataset, data_var="tp", verbose=False
     ) -> float:
         corners = ["top_left", "bottom_left", "bottom_right", "top_right"]
-        coords = [square.top_left, square.bottom_left, square.bottom_right, square.top_right]
+        coords = [
+            square.top_left,
+            square.bottom_left,
+            square.bottom_right,
+            square.top_right,
+        ]
 
         corner_data = {
             corner: era5_at_time.sel(latitude=lat, longitude=lon)
@@ -225,7 +271,8 @@ class ERA5Square:
         max_tp = max(tp_values)
 
         if verbose:
-            log.debug(f"""
+            log.debug(
+                f"""
                 corner_data:
                 Top left lat lon: ({corner_data["top_left"].latitude.values}, {corner_data["top_left"].longitude.values})
                 Top left precipitation: {corner_data["top_left"][data_var].values}
@@ -240,11 +287,14 @@ class ERA5Square:
                 Top right precipitation: {corner_data["top_right"][data_var].values}
 
                 max_tp: {max_tp}
-            """)
+            """
+            )
 
         if np.isnan(max_tp):
             lat_mean, lon_mean = np.mean(coords, axis=0)
-            max_tp = self._find_nearest_non_null(era5_at_time, lat_mean, lon_mean, data_var)
+            max_tp = self._find_nearest_non_null(
+                era5_at_time, lat_mean, lon_mean, data_var
+            )
         m_to_mm = 1000
         return max_tp * m_to_mm
 
@@ -253,7 +303,9 @@ class ERA5Square:
         square: Square,
         ds_time: xr.Dataset,
     ) -> float:
-        return self.get_era5_single_levels_precipitation_in_square(square, ds_time, verbose=True)
+        return self.get_era5_single_levels_precipitation_in_square(
+            square, ds_time, verbose=True
+        )
 
     def get_square(
         self,
@@ -284,12 +336,16 @@ class ERA5Square:
             return None
         lat_bottom, lon_bottom = bottom_neighbor
 
-        right_neighbor = get_right_neighbor(lat_bottom, lon_bottom, sorted_longitudes_ascending)
+        right_neighbor = get_right_neighbor(
+            lat_bottom, lon_bottom, sorted_longitudes_ascending
+        )
         if right_neighbor is None:
             return None
         lat_right, lon_right = right_neighbor
 
-        upper_neighbor = get_upper_neighbor(lat_right, lon_right, sorted_latitudes_ascending)
+        upper_neighbor = get_upper_neighbor(
+            lat_right, lon_right, sorted_latitudes_ascending
+        )
         if upper_neighbor is None:
             return None
         lat_upper, lon_upper = upper_neighbor
@@ -311,7 +367,9 @@ if __name__ == "__main__":
     month = timestamp.month
 
     era5_square = ERA5Square()
-    ds = xr.open_dataset(f"./data/reanalysis/ERA5-single-levels/monthly_data/RJ_{year}_{month}.nc")
+    ds = xr.open_dataset(
+        f"./data/reanalysis/ERA5-single-levels/monthly_data/RJ_{year}_{month}.nc"
+    )
     ds = ds.sel(valid_time=timestamp)
     lats = ds.latitude.values
     lons = ds.longitude.values
@@ -334,7 +392,8 @@ if __name__ == "__main__":
 
     precipitation = era5_square.get_precipitation_in_square(square, ds)
 
-    log.success(f"""
+    log.success(
+        f"""
         Precipitation in square:
         top_left={square.top_left}
         bottom_left={square.bottom_left}
@@ -343,7 +402,8 @@ if __name__ == "__main__":
         {square.top_left} --- {square.top_right}
         | {" " * 20} {precipitation:.2f} mm  {" " * 20} |
         {square.bottom_left} --- {square.bottom_right}
-    """)
+    """
+    )
     ds.close()
 
     ds = xr.open_dataset(
@@ -354,7 +414,8 @@ if __name__ == "__main__":
     log.debug(ds)
 
     temperature = era5_square.get_temperature_in_square(square, ds, verbose=True)
-    log.success(f"""
+    log.success(
+        f"""
         Temperature in square:
         top_left={square.top_left}
         bottom_left={square.bottom_left}
@@ -363,6 +424,7 @@ if __name__ == "__main__":
         {square.top_left} --- {square.top_right}
         | {" " * 10} {temperature}  {" " * 10} |
         {square.bottom_left} --- {square.bottom_right}
-    """)
+    """
+    )
 
     ds.close()

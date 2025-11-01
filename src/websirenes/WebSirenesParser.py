@@ -4,11 +4,11 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
 import pandera as pa
-from zoneinfo import ZoneInfo
 
 
 def get_UTC_offset_from_timezone_name(timezone_name: str) -> str:
@@ -92,11 +92,11 @@ class WebSirenesParser:
         timeframe = match.group("timeframe")
 
         m15, m30, h01, h02, h03, h04, h24, h96, station_id = [
-            np.nan
-            if x == "null"
-            else float(x.replace(",", "."))
-            if "," in x
-            else float(x)
+            (
+                np.nan
+                if x == "null"
+                else float(x.replace(",", ".")) if "," in x else float(x)
+            )
             for x in timeframe.strip().split()
         ]
 

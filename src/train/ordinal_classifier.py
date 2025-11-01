@@ -1,30 +1,29 @@
 """
-    https://stats.stackexchange.com/questions/209290/deep-learning-for-ordinal-classification
+https://stats.stackexchange.com/questions/209290/deep-learning-for-ordinal-classification
 
-    https://towardsdatascience.com/simple-trick-to-train-an-ordinal-regression-with-any-classifier-6911183d2a3c
+https://towardsdatascience.com/simple-trick-to-train-an-ordinal-regression-with-any-classifier-6911183d2a3c
 
-    https://towardsdatascience.com/how-to-perform-ordinal-regression-classification-in-pytorch-361a2a095a99
+https://towardsdatascience.com/how-to-perform-ordinal-regression-classification-in-pytorch-361a2a095a99
 
-    https://arxiv.org/pdf/0704.1028.pdf
+https://arxiv.org/pdf/0704.1028.pdf
 
-    https://datascience.stackexchange.com/questions/44354/ordinal-classification-with-xgboost
+https://datascience.stackexchange.com/questions/44354/ordinal-classification-with-xgboost
 
-    https://towardsdatascience.com/building-rnn-lstm-and-gru-for-time-series-using-pytorch-a46e5b094e7b
+https://towardsdatascience.com/building-rnn-lstm-and-gru-for-time-series-using-pytorch-a46e5b094e7b
 
-    https://neptune.ai/blog/how-to-deal-with-imbalanced-classification-and-regression-data
+https://neptune.ai/blog/how-to-deal-with-imbalanced-classification-and-regression-data
 
-    https://colab.research.google.com/github/YyzHarry/imbalanced-regression/blob/master/tutorial/tutorial.ipynb#scrollTo=tSrzhog1gxyY
+https://colab.research.google.com/github/YyzHarry/imbalanced-regression/blob/master/tutorial/tutorial.ipynb#scrollTo=tSrzhog1gxyY
 """
 
-from train.base_classifier import BaseClassifier
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from train.training_utils import *
-from train.evaluate import *
+
 from src.utils.rainfall import ordinal_encoding_to_level
+from train.base_classifier import BaseClassifier
 from train.early_stopping import *
-from utils import rainfall
+from train.evaluate import *
+from train.training_utils import *
+
 
 class OrdinalClassifier(BaseClassifier):
     def __init__(self, learner):
@@ -87,10 +86,10 @@ class OrdinalClassifier(BaseClassifier):
     #         epoch, result['val_loss'], result['val_acc']))
 
     def predict(self, X):
-        print('Making predictions with ordinal classification model...')
+        print("Making predictions with ordinal classification model...")
         self.eval()
 
-        X_as_tensor = torch.from_numpy(X.astype('float64'))
+        X_as_tensor = torch.from_numpy(X.astype("float64"))
         X_as_tensor = torch.permute(X_as_tensor, (0, 2, 1))
 
         outputs = []
@@ -105,7 +104,7 @@ class OrdinalClassifier(BaseClassifier):
         return y_pred
 
     def evaluate(self, test_loader):
-        print('Evaluating ordinal classifier...')
+        print("Evaluating ordinal classifier...")
         self.learner.eval()
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -118,10 +117,10 @@ class OrdinalClassifier(BaseClassifier):
 
                 yb_pred = yb_pred.detach().cpu().numpy()
                 yb_pred = ordinal_encoding_to_level(yb_pred)
-                yb_pred = yb_pred.reshape(-1,1)
+                yb_pred = yb_pred.reshape(-1, 1)
 
                 yb_test = yb_test.detach().cpu().numpy()
-                yb_test = yb_test.reshape(-1,1)
+                yb_test = yb_test.reshape(-1, 1)
 
                 if y_pred is None:
                     y_pred = yb_pred
@@ -131,7 +130,7 @@ class OrdinalClassifier(BaseClassifier):
                     y_true = np.vstack([y_true, yb_test])
 
         y_true = rp.value_to_level(y_true)
-        print(f'Shapes: {y_true.shape}, {y_pred.shape}')
+        print(f"Shapes: {y_true.shape}, {y_pred.shape}")
 
         return y_true, y_pred
 

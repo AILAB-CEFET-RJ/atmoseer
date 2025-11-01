@@ -21,7 +21,9 @@ class AlertarioParser:
     rain_gauge_path = Path(__file__).parent / "alertario-from-source"
 
     def get_region_of_interest(self) -> dict:
-        ds = xr.open_dataset("./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2018_1.nc")
+        ds = xr.open_dataset(
+            "./data/reanalysis/ERA5-single-levels/monthly_data/RJ_2018_1.nc"
+        )
         lats = ds.latitude.values
         lons = ds.longitude.values
         region_of_interest = {
@@ -52,7 +54,9 @@ class AlertarioParser:
 
         imputer = KNNImputer(n_neighbors=2)
         df[column] = imputer.fit_transform(df[[column]])
-        assert df[column].isna().sum() == 0, "Missing values after imputation should be zero"
+        assert (
+            df[column].isna().sum() == 0
+        ), "Missing values after imputation should be zero"
         return df
 
     def _get_df(self, file_path: Path) -> pd.DataFrame:
@@ -63,7 +67,9 @@ class AlertarioParser:
             skiprows=5,
             names=["Dia", "Hora", "HBV", "m15", "h01", "h04", "h24", "h96"],
         )
-        df["datetime"] = pd.to_datetime(df["Dia"] + " " + df["Hora"], format="%d/%m/%Y %H:%M:%S")
+        df["datetime"] = pd.to_datetime(
+            df["Dia"] + " " + df["Hora"], format="%d/%m/%Y %H:%M:%S"
+        )
 
         df["m15"] = pd.to_numeric(df["m15"], errors="coerce")
         df["h01"] = pd.to_numeric(df["h01"], errors="coerce")
@@ -72,7 +78,9 @@ class AlertarioParser:
 
     def process_station(self, station: str):
         station_dfs = []
-        months = pd.date_range(pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS")
+        months = pd.date_range(
+            pd.Timestamp("2013-01-01"), pd.Timestamp("2024-10-01"), freq="MS"
+        )
         for month in months:
             current_year = month.year
             current_month = month.month
@@ -84,7 +92,9 @@ class AlertarioParser:
                 df = self._get_df(file_path)
                 station_dfs.append(df)
             except Exception as e:
-                print(f"Error processing station {station} at {current_year}-{current_month}: {e}")
+                print(
+                    f"Error processing station {station} at {current_year}-{current_month}: {e}"
+                )
                 raise e
         assert len(station_dfs) == len(months)
         df = pd.concat(station_dfs).sort_values(by="datetime").reset_index(drop=True)

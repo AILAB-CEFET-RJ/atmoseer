@@ -1,45 +1,29 @@
-from netCDF4 import Dataset
-import os
-import numpy as np
+import argparse
 import glob
+import os
+import sys
+
+import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 import xarray as xr
 
-import argparse
-import sys
-
-from config import globals
 # from src.utils.util import *
 
 station_ids_for_goes16 = {
-    "A652": {
-        "latitude": -22.98833333,
-        "longitude": -43.19055555
-        },
-    "A636": {
-        "latitude": -22.93999999,
-        "longitude": -43.40277777
-    },
-    "A621": {
-        "latitude": -22.86138888,
-        "longitude": -43.41138888
-    },
-    "A602": {
-        "latitude": -23.05027777,
-        "longitude": -43.59555555
-    },
-    "A627": {
-        "latitude": -22.86749999,
-        "longitude": -43.10194444
-    }
-    }
+    "A652": {"latitude": -22.98833333, "longitude": -43.19055555},
+    "A636": {"latitude": -22.93999999, "longitude": -43.40277777},
+    "A621": {"latitude": -22.86138888, "longitude": -43.41138888},
+    "A602": {"latitude": -23.05027777, "longitude": -43.59555555},
+    "A627": {"latitude": -22.86749999, "longitude": -43.10194444},
+}
+
 
 def haversine(lat1, lon1, lat2, lon2):
     """
     Calculate the great circle distance between two points on the earth.
 
-    This function computes the distance using the Haversine formula, which is an equation giving the shortest distance between any two points on the surface of a sphere. 
+    This function computes the distance using the Haversine formula, which is an equation giving the shortest distance between any two points on the surface of a sphere.
 
     Parameters:
     lat1 (float): Latitude of the first point in decimal degrees.
@@ -56,8 +40,10 @@ def haversine(lat1, lon1, lat2, lon2):
     R = 6371  # Earth radius in kilometers
     dLat = np.radians(lat2 - lat1)
     dLon = np.radians(lon2 - lon1)
-    a = np.sin(dLat/2) * np.sin(dLat/2) + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(dLon/2) * np.sin(dLon/2)
-    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+    a = np.sin(dLat / 2) * np.sin(dLat / 2) + np.cos(np.radians(lat1)) * np.cos(
+        np.radians(lat2)
+    ) * np.sin(dLon / 2) * np.sin(dLon / 2)
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
     distance = R * c
     return distance
 
@@ -83,17 +69,29 @@ def read_and_process_files(files, station_id, g16_pre_process_data_file):
             nc_indx = i
             g16_data = files[nc_indx]
             g16_data_file.append(g16_data)
-            ds = xr.open_dataset(g16_data_file[i], cache=False, )
+            ds = xr.open_dataset(
+                g16_data_file[i],
+                cache=False,
+            )
             df = ds.to_dataframe()
-            df = df[df.apply(lambda row: haversine(station_lat, station_lon, row['event_lat'], row['event_lon']) <= radius_km, axis=1)]
-            df['event_time_offset'] = df['event_time_offset'].astype('datetime64[us]')
-            g16_pre_process_data_file['Datetime'].extend(df['event_time_offset'])
-            g16_pre_process_data_file['event_energy'].extend(df['event_energy'])
+            df = df[
+                df.apply(
+                    lambda row: haversine(
+                        station_lat, station_lon, row["event_lat"], row["event_lon"]
+                    )
+                    <= radius_km,
+                    axis=1,
+                )
+            ]
+            df["event_time_offset"] = df["event_time_offset"].astype("datetime64[us]")
+            g16_pre_process_data_file["Datetime"].extend(df["event_time_offset"])
+            g16_pre_process_data_file["event_energy"].extend(df["event_energy"])
             ds.close()
         except:
             pass
 
     return g16_pre_process_data_file
+
 
 def pre_process_tpw_product(path, station_id):
     """
@@ -114,25 +112,25 @@ def pre_process_tpw_product(path, station_id):
     """
     # navigate to directory with .nc data files
     os.chdir(str(path))
-    nc_files = glob.glob('*GLM-L2-LCFA*')
+    nc_files = glob.glob("*GLM-L2-LCFA*")
     nc_files = sorted(nc_files)
 
-    parquet_dir = 'data/parquet_files'
+    parquet_dir = "data/parquet_files"
 
     if not os.path.exists(parquet_dir):
         os.makedirs(parquet_dir)
 
-    parquet_path = f'data/parquet_files/glm_{station_id}_preprocessed_file.parquet'
+    parquet_path = f"data/parquet_files/glm_{station_id}_preprocessed_file.parquet"
 
     batch_size = 1000
     total_files = len(nc_files)
 
-    g16_pre_process_data_file = {'Datetime': [], 'event_energy': []}
+    g16_pre_process_data_file = {"Datetime": [], "event_energy": []}
 
     print(f"You have {total_files} to be processed")
 
     for i in range(0, total_files, batch_size):
-        batch_files = nc_files[i:i+batch_size]
+        batch_files = nc_files[i : i + batch_size]
         read_and_process_files(batch_files, station_id, g16_pre_process_data_file)
         print(f"{len(g16_pre_process_data_file)} Files was pre processed")
 
@@ -140,11 +138,11 @@ def pre_process_tpw_product(path, station_id):
     df = pd.DataFrame(g16_pre_process_data_file)
 
     # Set the 'Datetime' column as the DatetimeIndex
-    df['Datetime'] = pd.to_datetime(df['Datetime'])
-    df = df.set_index(pd.DatetimeIndex(df['Datetime']))
+    df["Datetime"] = pd.to_datetime(df["Datetime"])
+    df = df.set_index(pd.DatetimeIndex(df["Datetime"]))
 
     # Remove time-related columns since now this information is in the index.
-    df = df.drop(['Datetime'], axis=1)
+    df = df.drop(["Datetime"], axis=1)
 
     # Append to the existing Parquet file or create a new one
     if os.path.exists(parquet_path):
@@ -155,22 +153,31 @@ def pre_process_tpw_product(path, station_id):
         df_combined = df
 
     # Save the combined DataFrame to a Parquet file
-    df_combined.to_parquet(parquet_path, compression='gzip')
+    df_combined.to_parquet(parquet_path, compression="gzip")
 
     return
 
+
 def main(argv):
-    parser = argparse.ArgumentParser(description='Preprocess ABI products station data.')
-    parser.add_argument('-s', '--station_id', required=True, help='ID of the weather station to preprocess data for.')
+    parser = argparse.ArgumentParser(
+        description="Preprocess ABI products station data."
+    )
+    parser.add_argument(
+        "-s",
+        "--station_id",
+        required=True,
+        help="ID of the weather station to preprocess data for.",
+    )
     args = parser.parse_args(argv[1:])
 
-    directory = 'data/goes16/glm_files'
+    directory = "data/goes16/glm_files"
 
     station_id = args.station_id
 
-    print('\n***Preprocessing GLM Files***')
+    print("\n***Preprocessing GLM Files***")
     pre_process_tpw_product(directory, station_id)
-    print('Done!')
+    print("Done!")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main(sys.argv)

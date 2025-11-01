@@ -1,36 +1,32 @@
-from netCDF4 import Dataset                     # Read / Write NetCDF4 files
-import matplotlib.pyplot as plt                 # Plotting library
-from datetime import timedelta, date, datetime  # Basic Dates and time types
-import cartopy, cartopy.crs as ccrs             # Plot maps
-import os                                       # Miscellaneous operating system interfaces
-import numpy as np                              # Scientific computing with Python
-from matplotlib import cm                       # Colormap handling utilities
-from goes16_utils import download_PROD             # Our function for download
-from goes16_utils import reproject                 # Our function for reproject
-from goes16.processing_data import find_pixel_of_coordinate
-from goes16.processing_data import open_dataset
-import pandas as pd
-import sys
 import argparse
+import os  # Miscellaneous operating system interfaces
+import sys
+import time
+from collections import OrderedDict
+from datetime import datetime, timedelta  # Basic Dates and time types
+from typing import List
+
+import pandas as pd
+from goes16_utils import download_PROD  # Our function for download
 
 from config.globals import INMET_WEATHER_STATION_IDS
+from goes16.processing_data import find_pixel_of_coordinate, open_dataset
 
-from typing import List
-from collections import OrderedDict
-import time
 
-#------------------------------------------------------------------------------
-def download_data_for_a_day(df: pd.DataFrame, 
-                            yyyymmdd: str, 
-                            stations_of_interest: dict, 
-                            product_name: str, 
-                            variable_names: List[str], 
-                            temporal_resolution: int, 
-                            remove_full_disk_file: bool = True):
+# ------------------------------------------------------------------------------
+def download_data_for_a_day(
+    df: pd.DataFrame,
+    yyyymmdd: str,
+    stations_of_interest: dict,
+    product_name: str,
+    variable_names: List[str],
+    temporal_resolution: int,
+    remove_full_disk_file: bool = True,
+):
     """
     Downloads values of a specific variable from a specific product and for a specific day from GOES-16 satellite.
-    These values are downloaded only for the locations (lat/lon) of a list of stations of interest. 
-    These downloaded values are appended (as new rows) to the provided DataFrame. 
+    These values are downloaded only for the locations (lat/lon) of a list of stations of interest.
+    These downloaded values are appended (as new rows) to the provided DataFrame.
     Each row will have the following columns: (timestamp, station_id, variable names's value)
 
     Args:
@@ -46,57 +42,63 @@ def download_data_for_a_day(df: pd.DataFrame,
     """
 
     # Directory to temporarily store each downloaded full disk file.
-    temp_dir  = "./data/goes16/temp"
+    temp_dir = "./data/goes16/temp"
 
     # Initial time and date
-    yyyy = datetime.strptime(yyyymmdd, '%Y%m%d').strftime('%Y')
-    mm = datetime.strptime(yyyymmdd, '%Y%m%d').strftime('%m')
-    dd = datetime.strptime(yyyymmdd, '%Y%m%d').strftime('%d')
+    yyyy = datetime.strptime(yyyymmdd, "%Y%m%d").strftime("%Y")
+    mm = datetime.strptime(yyyymmdd, "%Y%m%d").strftime("%m")
+    dd = datetime.strptime(yyyymmdd, "%Y%m%d").strftime("%d")
 
     hour_ini = 0
-    date_ini = datetime(int(yyyy),int(mm),int(dd),hour_ini,0)
-    date_end = datetime(int(yyyy),int(mm),int(dd),hour_ini,0) + timedelta(hours=23)
+    date_ini = datetime(int(yyyy), int(mm), int(dd), hour_ini, 0)
+    date_end = datetime(int(yyyy), int(mm), int(dd), hour_ini, 0) + timedelta(hours=23)
 
     time_step = date_ini
-  
-    #-----------------------------------------------------------------------------------------------------------
-    # Accumulation loop. Scans all of the files for the given day. 
-    # For each file, gets the TPW values for the locations where 
-    # the stations of interested are located.
-    while (time_step <= date_end):
-        # Date structure
-        yyyymmddhhmn = datetime.strptime(str(time_step), '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M')
 
-        print(f'-Getting data for {yyyymmddhhmn}...')
+    # -----------------------------------------------------------------------------------------------------------
+    # Accumulation loop. Scans all of the files for the given day.
+    # For each file, gets the TPW values for the locations where
+    # the stations of interested are located.
+    while time_step <= date_end:
+        # Date structure
+        yyyymmddhhmn = datetime.strptime(str(time_step), "%Y-%m-%d %H:%M:%S").strftime(
+            "%Y%m%d%H%M"
+        )
+
+        print(f"-Getting data for {yyyymmddhhmn}...")
 
         # Download the full disk file from the Amazon cloud.
         file_name = download_PROD(yyyymmddhhmn, product_name, temp_dir)
 
         try:
-            full_disk_filename = f'{temp_dir}/{file_name}.nc'
+            full_disk_filename = f"{temp_dir}/{file_name}.nc"
             ds = open_dataset(full_disk_filename)
 
             if ds is not None:
                 for wsoi_id in stations_of_interest:
                     values_dict = OrderedDict()
                     for variable_name in variable_names:
-                        field, LonCen, LatCen = ds.image(variable_name, lonlat='center')
+                        field, LonCen, LatCen = ds.image(variable_name, lonlat="center")
                         lon = stations_of_interest[wsoi_id][1]
                         lat = stations_of_interest[wsoi_id][0]
                         x, y = find_pixel_of_coordinate(LonCen, LatCen, lon, lat)
-                        value = field.data[y,x]
+                        value = field.data[y, x]
                         values_dict[variable_name] = value
-                    new_row = {'timestamp': yyyymmddhhmn, 'station_id': wsoi_id}
+                    new_row = {"timestamp": yyyymmddhhmn, "station_id": wsoi_id}
                     new_row.update(values_dict)
                     df = df.append(new_row, ignore_index=True)
 
                 if remove_full_disk_file:
                     try:
-                        os.remove(full_disk_filename)  # Use os.remove() to delete the file
+                        os.remove(
+                            full_disk_filename
+                        )  # Use os.remove() to delete the file
                     except FileNotFoundError:
                         print(f"Error: File '{full_disk_filename}' not found.")
                     except PermissionError:
-                        print(f"Error: Permission denied to remove file '{full_disk_filename}'.")
+                        print(
+                            f"Error: Permission denied to remove file '{full_disk_filename}'."
+                        )
                     except Exception as e:
                         print(f"An error occurred: {e}")
         except FileNotFoundError:
@@ -107,17 +109,40 @@ def download_data_for_a_day(df: pd.DataFrame,
 
     return df
 
+
 def main(argv):
     # Create an argument parser
-    parser = argparse.ArgumentParser(description="Retrieve GOES16's data for (user-provided) product, variable, and date range.")
-    
+    parser = argparse.ArgumentParser(
+        description="Retrieve GOES16's data for (user-provided) product, variable, and date range."
+    )
+
     # Add command line arguments for date_ini and date_end
-    parser.add_argument("--date_ini", type=str, required=True, help="Start date (format: YYYY-MM-DD)")
-    parser.add_argument("--date_end", type=str, required=True, help="End date (format: YYYY-MM-DD)")
-    parser.add_argument("--prod", type=str, required=True, help="GOES16 product name (e.g., 'ABI-L2-TPWF', 'ABI-L2-DSIF')")
-    parser.add_argument("--vars", nargs='+', type=str, required=True, help="Variable names (e.g., CAPE, CIN, ...)")
-    parser.add_argument("--temporal_resolution", type=int, default=10, help="Temporal resolution of the observations, in minutes (default: 10)")
-    
+    parser.add_argument(
+        "--date_ini", type=str, required=True, help="Start date (format: YYYY-MM-DD)"
+    )
+    parser.add_argument(
+        "--date_end", type=str, required=True, help="End date (format: YYYY-MM-DD)"
+    )
+    parser.add_argument(
+        "--prod",
+        type=str,
+        required=True,
+        help="GOES16 product name (e.g., 'ABI-L2-TPWF', 'ABI-L2-DSIF')",
+    )
+    parser.add_argument(
+        "--vars",
+        nargs="+",
+        type=str,
+        required=True,
+        help="Variable names (e.g., CAPE, CIN, ...)",
+    )
+    parser.add_argument(
+        "--temporal_resolution",
+        type=int,
+        default=10,
+        help="Temporal resolution of the observations, in minutes (default: 10)",
+    )
+
     args = parser.parse_args()
     start_date = args.date_ini
     end_date = args.date_end
@@ -148,26 +173,37 @@ def main(argv):
         stations_of_interest[row["STATION_ID"]] = wsoi_lat_lon
 
     # Create an empty DataFrame to store historical product values for each station of interest.
-    df = pd.DataFrame(columns=['timestamp', 'station_id', *variable_names])
+    df = pd.DataFrame(columns=["timestamp", "station_id", *variable_names])
 
     # Convert start_date and end_date to datetime objects
     from datetime import datetime
-    start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
-    end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
 
-    # Iterate through the range of user-provided days, 
+    start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
+    end_datetime = datetime.strptime(end_date, "%Y-%m-%d")
+
+    # Iterate through the range of user-provided days,
     # one day at a time, to retrieve corresponding data.
     current_datetime = start_datetime
     while current_datetime <= end_datetime:
-        yyyymmdd = current_datetime.strftime('%Y%m%d')
-        df = download_data_for_a_day(df, yyyymmdd, stations_of_interest, product_name, variable_names, temporal_resolution=temporal_resolution)
+        yyyymmdd = current_datetime.strftime("%Y%m%d")
+        df = download_data_for_a_day(
+            df,
+            yyyymmdd,
+            stations_of_interest,
+            product_name,
+            variable_names,
+            temporal_resolution=temporal_resolution,
+        )
         # Increment the current date by one day
         current_datetime += timedelta(days=1)
 
-    filename = f'{product_name}_{start_datetime}_to_{end_datetime}.parquet'
-    filename = filename.replace(' 00:00:00', '')
+    filename = f"{product_name}_{start_datetime}_to_{end_datetime}.parquet"
+    filename = filename.replace(" 00:00:00", "")
     df.to_parquet(filename)
-    print(f'A Pandas dataframe with shape {df.shape} was created and saved in the file {filename}.')
+    print(
+        f"A Pandas dataframe with shape {df.shape} was created and saved in the file {filename}."
+    )
+
 
 if __name__ == "__main__":
     ### Examples:
@@ -178,8 +214,8 @@ if __name__ == "__main__":
     start_time = time.time()  # Record the start time
 
     main(sys.argv)
-    
+
     end_time = time.time()  # Record the end time
     duration = (end_time - start_time) / 60  # Calculate duration in minutes
-    
-    print(f"Script duration: {duration:.2f} minutes")    
+
+    print(f"Script duration: {duration:.2f} minutes")

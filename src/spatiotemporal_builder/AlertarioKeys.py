@@ -17,7 +17,9 @@ log = logger.get_logger(__name__)
 
 
 class AlertarioKeys:
-    def __init__(self, alertario_parser: AlertarioParser, alertario_coords: pd.DataFrame) -> None:
+    def __init__(
+        self, alertario_parser: AlertarioParser, alertario_coords: pd.DataFrame
+    ) -> None:
         self.alertario_keys_path = Path(__file__).parent / "alertario_keys"
         if not self.alertario_keys_path.exists():
             self.alertario_keys_path.mkdir()
@@ -45,8 +47,12 @@ class AlertarioKeys:
     def load_key(self, key: str) -> pd.DataFrame:
         return pd.read_parquet(f"{self.alertario_keys_path}/{key}.parquet")
 
-    def _merge_coords_by_estacao_desc(self, df: pd.DataFrame, estacao_desc: str) -> pd.DataFrame:
-        station = self.alertario_coords[self.alertario_coords["estacao_desc"] == estacao_desc]
+    def _merge_coords_by_estacao_desc(
+        self, df: pd.DataFrame, estacao_desc: str
+    ) -> pd.DataFrame:
+        station = self.alertario_coords[
+            self.alertario_coords["estacao_desc"] == estacao_desc
+        ]
         lat = station["latitude"].values[0]
         lon = station["longitude"].values[0]
         df["estacao_desc"] = estacao_desc
@@ -80,12 +86,14 @@ class AlertarioKeys:
                 and lon <= region_of_interest["east"]
                 and lon >= region_of_interest["west"]
             ):
-                log.error(f"""
+                log.error(
+                    f"""
                     Station {station} is not in the region of interest:
                     Station lat: {lat}
                     Station lon: {lon}
                     Region of interest: {region_of_interest}
-                """)
+                """
+                )
                 exit(1)
 
             if data["datetime"].min() < minimum_date:
@@ -110,14 +118,16 @@ class AlertarioKeys:
                 indent=4,
             )
 
-        log.success(f"""
+        log.success(
+            f"""
             Alertario keys built successfully:
             Keys path: {self.alertario_keys_path}
             Describe path: {self.alertario_describe_path}
             Minimum date: {minimum_date}
             Maximum date: {maximum_date}
             Minimum and maximum path: {minimum_maximum_dates_path}
-        """)
+        """
+        )
 
 
 if __name__ == "__main__":

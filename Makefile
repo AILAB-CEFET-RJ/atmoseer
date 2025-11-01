@@ -94,3 +94,19 @@ alerta-rio-process:
 # === Clean Outputs ===
 clean:
 	rm -rf $(DATA_DIR)/goes16/features/*
+
+.PHONY: format lint lint-fix pre-commit-install
+
+format:
+	ruff format src tests
+	black src tests
+
+lint:
+	ruff check src tests
+
+lint-fix:
+	ruff check src tests --fix
+	black src tests
+
+pre-commit-install:
+	pre-commit install
