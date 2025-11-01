@@ -1,11 +1,14 @@
-import requests
-from src.surface_stations.retrieve_ws_cemaden import get_token
-import VAR
 import folium
+import requests
+
+from src.surface_stations.retrieve_ws_cemaden import get_token
+from src.utils.env_loader import get_cemaden_credentials
+
+
 url = "https://sws.cemaden.gov.br/PED/rest/pcds-cadastro/dados-cadastrais"
 
-
-token = get_token(VAR.nome_secreto, VAR.senha_secreta)
+nome_secreto, senha_secreta = get_cemaden_credentials()
+token = get_token(nome_secreto, senha_secreta)
 codibge = "3304557"
 
 headers = {

@@ -1,15 +1,19 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import folium
 import requests
 from pathlib import Path
-import folium
+
 from src.surface_stations.retrieve_ws_cemaden import get_token
-import VAR
+from src.utils.env_loader import get_cemaden_credentials
+
+
+NOME_SECRETO, SENHA_SECRETA = get_cemaden_credentials()
 
 def get_estacao_posicoes(codibge="3304557"):
     url = "https://sws.cemaden.gov.br/PED/rest/pcds-cadastro/dados-cadastrais"
-    token = get_token(VAR.nome_secreto, VAR.senha_secreta)
+    token = get_token(NOME_SECRETO, SENHA_SECRETA)
     headers = {"token": token}
     params = {"codibge": codibge, "formato": "json"}
     response = requests.get(url, headers=headers, params=params)
