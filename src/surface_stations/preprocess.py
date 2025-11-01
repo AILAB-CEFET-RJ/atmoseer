@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import math
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -16,6 +17,35 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from config import globals
 from utils import util as util
+
+
+def _safe_get(dct: dict, key: str, default=None):
+    try:
+        return dct.get(key, default)
+    except AttributeError:
+        return default
+
+
+def _is_truthy(value) -> bool:
+    if isinstance(value, str):
+        return value.lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
+def _nan_to_none(value):
+    if value is None:
+        return None
+    if isinstance(value, float) and math.isnan(value):
+        return None
+    return value
+
+
+def _ensure_list(value, default=None):
+    if value is None:
+        return default or []
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return [value]
 
 STATION_SYSTEM_CONFIG_DIR = PROJECT_ROOT / "config" / "station_systems"
 
@@ -106,6 +136,94 @@ def apply_imputation(df: pd.DataFrame, imputation_config: dict) -> pd.DataFrame:
     logging.warning(f"Unknown imputation strategy '{strategy}'. Skipping imputation.")
     return df
 
+
+def build_quality_report(
+    station_id: str,
+    station_system: str,
+    report_df: pd.DataFrame,
+    report_config: dict,
+    station_metadata: dict,
+    scaler_config: dict,
+    imputation_config: dict,
+    missing_counts_before: pd.Series,
+    imputation_applied: bool,
+    source_file: str,
+    output_file: str,
+    target_column: str,
+) -> dict:
+    report_fields = _ensure_list(_safe_get(report_config, "fields"), default=["missing_fraction", "min", "max"])
+    summary_keys = _ensure_list(_safe_get(report_config, "summary"), default=["rows", "columns", "missing_fraction"])
+
+    num_rows = int(report_df.shape[0])
+    num_columns = int(report_df.shape[1])
+    total_cells = num_rows * num_columns if num_rows and num_columns else 0
+    missing_fraction = (
+        (missing_counts_before.sum() / total_cells) if total_cells else 0.0
+    )
+
+    per_column_metrics = {}
+    for column in report_df.columns:
+        column_metrics = {}
+        for field in report_fields:
+            if field == "missing_fraction":
+                column_metrics[field] = (
+                    float(missing_counts_before[column]) / num_rows if num_rows else 0.0
+                )
+            elif field == "missing_count":
+                column_metrics[field] = int(missing_counts_before[column])
+            elif field == "imputed_fraction":
+                column_metrics[field] = (
+                    float(missing_counts_before[column]) / num_rows if (num_rows and imputation_applied) else 0.0
+                )
+            elif field == "imputed_count":
+                column_metrics[field] = int(missing_counts_before[column]) if imputation_applied else 0
+            elif field == "min":
+                column_metrics[field] = _nan_to_none(report_df[column].min(skipna=True))
+            elif field == "max":
+                column_metrics[field] = _nan_to_none(report_df[column].max(skipna=True))
+            elif field == "mean":
+                column_metrics[field] = _nan_to_none(report_df[column].mean(skipna=True))
+            elif field == "median":
+                column_metrics[field] = _nan_to_none(report_df[column].median(skipna=True))
+            elif field == "std":
+                column_metrics[field] = _nan_to_none(report_df[column].std(skipna=True))
+        per_column_metrics[column] = column_metrics
+
+    summary = {}
+    for key in summary_keys:
+        if key == "rows":
+            summary[key] = num_rows
+        elif key == "columns":
+            summary[key] = num_columns
+        elif key == "missing_fraction":
+            summary[key] = missing_fraction
+        elif key == "imputed_fraction":
+            summary[key] = missing_fraction if imputation_applied else 0.0
+        elif key == "min":
+            summary[key] = _nan_to_none(report_df.min(skipna=True).min())
+        elif key == "max":
+            summary[key] = _nan_to_none(report_df.max(skipna=True).max())
+        elif key == "mean":
+            summary[key] = _nan_to_none(report_df.mean(skipna=True).mean())
+
+    report_payload = {
+        "station_id": station_id,
+        "station_system": station_system,
+        "target_column": target_column,
+        "columns": list(report_df.columns),
+        "rows": num_rows,
+        "metadata": station_metadata or {},
+        "scaler": scaler_config or {},
+        "imputation": imputation_config or {},
+        "imputation_applied": imputation_applied,
+        "source_file": source_file,
+        "output_file": output_file,
+        "column_metrics": per_column_metrics,
+        "summary": summary,
+    }
+    return report_payload
+
+
 def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     system_settings = load_station_system_settings(station_system)
     feature_toggles = system_settings.get("features", {})
@@ -116,6 +234,9 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     preprocessing_settings = system_settings.get("preprocessing", {})
     scaler_config = preprocessing_settings.get("scaler", {})
     imputation_config = preprocessing_settings.get("imputation", {})
+    report_config = system_settings.get("report", {})
+    report_enabled = _is_truthy(_safe_get(report_config, "enabled", False))
+    station_metadata = _safe_get(_safe_get(system_settings, "stations", {}), ws_id, {})
 
     logging.info(f"Loading datasource file {ws_filename}).")
     df = pd.read_parquet(ws_filename)
@@ -196,6 +317,8 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     if target_name not in df.columns:
         raise KeyError(f"Target column '{target_name}' not found after preprocessing for station '{ws_id}'.")
     df = df[available_predictors + [target_name]]
+    report_reference_df = df[available_predictors].copy() if report_enabled else None
+    missing_counts_before = report_reference_df.isna().sum() if report_reference_df is not None else None
 
     #
     # Scale the data. This step is necessary here due to the next step, which deals with missing values.
@@ -223,6 +346,13 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
         logging.info("Done!\n")
     else:
         logging.info("Skipping missing-value imputation as configured.\n")
+    strategy_value = None
+    strategy_flag = True
+    if isinstance(imputation_config, dict):
+        strategy_value = imputation_config.get("strategy", "knn")
+        if isinstance(strategy_value, str):
+            strategy_flag = strategy_value.lower() not in {"none", "skip"}
+    imputation_applied = bool(impute_missing_values and strategy_flag)
 
     #
     # Add the target column back to the DataFrame.
@@ -236,6 +366,26 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     logging.info(f"Saving preprocessed data to {filename}...")
     df.to_parquet(filename, compression='gzip')
     logging.info("Done!\n")
+
+    if report_enabled and report_reference_df is not None and missing_counts_before is not None:
+        report_payload = build_quality_report(
+            station_id=ws_id,
+            station_system=station_system,
+            report_df=report_reference_df,
+            report_config=report_config,
+            station_metadata=station_metadata,
+            scaler_config=scaler_config,
+            imputation_config=imputation_config,
+            missing_counts_before=missing_counts_before,
+            imputation_applied=imputation_applied,
+            source_file=ws_filename,
+            output_file=filename,
+            target_column=target_name,
+        )
+        report_filename = output_folder + filename_and_extension[0] + '_preprocess_report.json'
+        with open(report_filename, 'w', encoding='utf-8') as report_file:
+            json.dump(report_payload, report_file, indent=2, ensure_ascii=False)
+        logging.info(f"Quality report saved to {report_filename}\n")
 
     logging.info("Done it all!\n")
 

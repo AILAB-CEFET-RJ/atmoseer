@@ -80,7 +80,7 @@
       "operation_start": null
     },
     "cidade_de_deus": {
-      "name": "Jacarepagu\u00e1/Cidade de Deus",
+      "name": "Jacarepaguá/Cidade de Deus",
       "state": "RJ",
       "status": "Operante",
       "latitude": -22.9456,
@@ -98,7 +98,7 @@
       "operation_start": null
     },
     "grajau": {
-      "name": "Est. Graja\u00fa/Jacarepagu\u00e1",
+      "name": "Est. Grajaú/Jacarepaguá",
       "state": "RJ",
       "status": "Operante",
       "latitude": -22.9256,
@@ -107,7 +107,7 @@
       "operation_start": null
     },
     "grande_meier": {
-      "name": "Grande M\u00e9ier",
+      "name": "Grande Méier",
       "state": "RJ",
       "status": "Operante",
       "latitude": -22.8906,
@@ -143,7 +143,7 @@
       "operation_start": null
     },
     "iraja": {
-      "name": "Iraj\u00e1",
+      "name": "Irajá",
       "state": "RJ",
       "status": "Operante",
       "latitude": -22.8269,
@@ -152,7 +152,7 @@
       "operation_start": null
     },
     "jardim_botanico": {
-      "name": "Jardim Bot\u00e2nico",
+      "name": "Jardim Botânico",
       "state": "RJ",
       "status": "Operante",
       "latitude": -22.9728,
@@ -242,7 +242,7 @@
       "operation_start": null
     },
     "sao_cristovao": {
-      "name": "S\u00e3o Crist\u00f3v\u00e3o",
+      "name": "São Cristóvão",
       "state": "RJ",
       "status": "Operante",
       "latitude": -22.8967,
@@ -251,7 +251,7 @@
       "operation_start": null
     },
     "saude": {
-      "name": "Sa\u00fade",
+      "name": "Saúde",
       "state": "RJ",
       "status": "Operante",
       "latitude": -22.8961,
@@ -269,7 +269,7 @@
       "operation_start": null
     },
     "tanque": {
-      "name": "Jacarepagu\u00e1/Tanque",
+      "name": "Jacarepaguá/Tanque",
       "state": "RJ",
       "status": "Operante",
       "latitude": -22.9125,
@@ -321,5 +321,20 @@
     "imputation": {
       "strategy": "ffill_then_zero"
     }
+  },
+  "report": {
+    "enabled": true,
+    "fields": [
+      "missing_fraction",
+      "imputed_fraction",
+      "min",
+      "max"
+    ],
+    "summary": [
+      "rows",
+      "columns",
+      "missing_fraction",
+      "imputed_fraction"
+    ]
   }
 }

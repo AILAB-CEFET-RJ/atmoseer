@@ -277,5 +277,20 @@
         "weights": "uniform"
       }
     }
+  },
+  "report": {
+    "enabled": true,
+    "fields": [
+      "missing_fraction",
+      "imputed_fraction",
+      "min",
+      "max"
+    ],
+    "summary": [
+      "rows",
+      "columns",
+      "missing_fraction",
+      "imputed_fraction"
+    ]
   }
 }

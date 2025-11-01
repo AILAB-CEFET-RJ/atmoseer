@@ -74,6 +74,11 @@ Example (`config/station_systems/inmet.json`):
         "weights": "uniform"
       }
     }
+  },
+  "report": {
+    "enabled": true,
+    "fields": ["missing_fraction", "imputed_fraction", "min", "max"],
+    "summary": ["rows", "columns", "missing_fraction", "imputed_fraction"]
   }
 }
 ```
@@ -118,6 +123,7 @@ For stations whose system is configured via JSON, the script performs:
    - Min-max normalisation (`normalize_predictors`).
    - KNN-based gap filling (`impute_missing_values`).
 5. **Persistence** to `<output_dir>/<station>_preprocessed.parquet.gzip`, where `output_dir` comes from the system definition in `config/globals.py`.
+6. **Optional report** (when `report.enabled` is true) saved as `<output_dir>/<station>_preprocess_report.json` summarising missing data, basic statistics and the preprocessing settings applied.
 
 Warnings are logged if mapped columns or predictors are missing, and the run aborts when the target column cannot be found.
 
@@ -126,3 +132,4 @@ Warnings are logged if mapped columns or predictors are missing, and the run abo
 - If you encounter `ModuleNotFoundError: No module named 'config'`, verify that `PYTHONPATH` includes `src` or call the Make target.
 - To disable a processing step (for example, wind features on gauge-only stations), set the corresponding flag to `false` in the system JSON.
 - After editing JSON files, keep them valid by running a quick lint (`python -m json.tool config/station_systems/<file>.json`).
+- Customise the generated report by editing `report.fields` (per-column metrics) and `report.summary` (dataset-level metrics) in each system JSON.
