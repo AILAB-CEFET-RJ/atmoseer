@@ -259,5 +259,23 @@
       "altitude_m": 26.0,
       "operation_start": "2015-09-01"
     }
+  },
+  "preprocessing": {
+    "scaler": {
+      "type": "minmax",
+      "params": {
+        "feature_range": [
+          0,
+          1
+        ]
+      }
+    },
+    "imputation": {
+      "strategy": "knn",
+      "params": {
+        "n_neighbors": 2,
+        "weights": "uniform"
+      }
+    }
   }
 }

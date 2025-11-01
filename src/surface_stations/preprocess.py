@@ -12,6 +12,7 @@ if str(SRC_DIR) not in sys.path:
 
 import pandas as pd
 from sklearn.impute import KNNImputer
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from config import globals
 from utils import util as util
@@ -43,6 +44,68 @@ def load_station_system_settings(system_name: str) -> dict:
     with config_path.open('r', encoding='utf-8') as config_file:
         return json.load(config_file)
 
+
+def apply_scaling(df: pd.DataFrame, scaler_config: dict) -> pd.DataFrame:
+    if df.empty:
+        return df
+    scaler_config = scaler_config or {}
+    scaler_type = scaler_config.get("type", "minmax")
+    if not isinstance(scaler_type, str):
+        logging.warning(f"Invalid scaler type '{scaler_type}'. Skipping normalization.")
+        return df
+    scaler_type = scaler_type.lower()
+    params = scaler_config.get("params", {}) or {}
+
+    if scaler_type == "minmax":
+        feature_range = params.get("feature_range", [0.0, 1.0])
+        if feature_range == [0.0, 1.0] or tuple(feature_range) == (0.0, 1.0):
+            return util.min_max_normalize(df)
+        scaler = MinMaxScaler(feature_range=tuple(feature_range))
+        scaled = scaler.fit_transform(df)
+    elif scaler_type == "standard":
+        scaler = StandardScaler(**params)
+        scaled = scaler.fit_transform(df)
+    elif scaler_type in {"none", "identity"}:
+        return df
+    else:
+        logging.warning(f"Unknown scaler type '{scaler_type}'. Skipping normalization.")
+        return df
+
+    scaled_df = pd.DataFrame(scaled, columns=df.columns, index=df.index)
+    return scaled_df
+
+
+def apply_imputation(df: pd.DataFrame, imputation_config: dict) -> pd.DataFrame:
+    if df.empty:
+        return df
+    imputation_config = imputation_config or {}
+    strategy = imputation_config.get("strategy", "knn")
+    if not isinstance(strategy, str):
+        logging.warning(f"Invalid imputation strategy '{strategy}'. Skipping imputation.")
+        return df
+    strategy = strategy.lower()
+    params = imputation_config.get("params", {}) or {}
+
+    if strategy == "knn":
+        n_neighbors = params.get("n_neighbors", 2)
+        weights = params.get("weights", "uniform")
+        imputer = KNNImputer(n_neighbors=n_neighbors, weights=weights)
+        imputed = imputer.fit_transform(df)
+        return pd.DataFrame(imputed, columns=df.columns, index=df.index)
+    if strategy in {"ffill_then_zero", "forward_then_zero"}:
+        return df.ffill().fillna(0.0)
+    if strategy in {"ffill", "forward"}:
+        return df.ffill()
+    if strategy in {"bfill", "backward"}:
+        return df.bfill()
+    if strategy in {"zero", "zeros"}:
+        return df.fillna(0.0)
+    if strategy in {"none", "skip"}:
+        return df
+
+    logging.warning(f"Unknown imputation strategy '{strategy}'. Skipping imputation.")
+    return df
+
 def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     system_settings = load_station_system_settings(station_system)
     feature_toggles = system_settings.get("features", {})
@@ -50,6 +113,9 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     add_hour_features = feature_toggles.get("add_hour_related_features", True)
     normalize_predictors = feature_toggles.get("normalize_predictors", True)
     impute_missing_values = feature_toggles.get("impute_missing_values", True)
+    preprocessing_settings = system_settings.get("preprocessing", {})
+    scaler_config = preprocessing_settings.get("scaler", {})
+    imputation_config = preprocessing_settings.get("imputation", {})
 
     logging.info(f"Loading datasource file {ws_filename}).")
     df = pd.read_parquet(ws_filename)
@@ -132,14 +198,15 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     df = df[available_predictors + [target_name]]
 
     #
-    # Normalize the weather station data. This step is necessary here due to the next step, which deals with missing values.
-    # Notice that we drop the target column before normalizing, to avoid some kind of data leakage.
+    # Scale the data. This step is necessary here due to the next step, which deals with missing values.
+    # Notice that we drop the target column before scaling, to avoid some kind of data leakage.
     # (see https://stats.stackexchange.com/questions/214728/should-data-be-normalized-before-or-after-imputation-of-missing-data)
     target_column = df[target_name]
     predictors_df = df.drop(columns=[target_name], axis=1).copy()
     if normalize_predictors:
-        logging.info("Min-max normalizing data...")
-        predictors_df = util.min_max_normalize(predictors_df)
+        scaler_type = (scaler_config.get("type") or "minmax") if isinstance(scaler_config, dict) else "minmax"
+        logging.info(f"Applying '{scaler_type}' scaling...")
+        predictors_df = apply_scaling(predictors_df, scaler_config)
         logging.info("Done!\n")
     else:
         logging.info("Skipping normalization as configured.\n")
@@ -147,11 +214,11 @@ def preprocess_ws(ws_id, ws_filename, output_folder, station_system):
     # 
     # Imput missing values on some features.
     if impute_missing_values:
-        logging.info("Applying KNNImputer...")
+        strategy = (imputation_config.get("strategy") or "knn") if isinstance(imputation_config, dict) else "knn"
+        logging.info(f"Applying '{strategy}' imputation...")
         percentage_missing = (predictors_df.isna().mean() * 100).mean() # Compute the percentage of missing values
         logging.info(f"There are {predictors_df.isnull().sum().sum()} missing values ({percentage_missing:.2f}%). Going to fill them...")
-        imputer = KNNImputer(n_neighbors=2)
-        predictors_df[:] = imputer.fit_transform(predictors_df)
+        predictors_df = apply_imputation(predictors_df, imputation_config)
         assert (not predictors_df.isnull().values.any().any())
         logging.info("Done!\n")
     else:

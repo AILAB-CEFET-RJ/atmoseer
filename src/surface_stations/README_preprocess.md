@@ -18,6 +18,7 @@ Preprocessing behaviour is controlled by JSON files under `config/station_system
 | `features` | Toggles that enable or skip feature engineering steps (`add_wind_related_features`, `add_hour_related_features`, `normalize_predictors`, `impute_missing_values`). |
 | `predictor_columns` | Ordered list of predictor columns to retain after feature engineering. |
 | `stations` | Metadata indexed by station id (name, state, status, coordinates, altitude, start date). |
+| `preprocessing` | Optional scaling/imputation configuration (`scaler`, `imputation`). |
 | `target_column` | Name of the target variable to keep with the predictors. |
 
 Example (`config/station_systems/inmet.json`):
@@ -58,7 +59,22 @@ Example (`config/station_systems/inmet.json`):
       "operation_start": "2000-05-23"
     }
   },
-  "target_column": "precipitation"
+  "target_column": "precipitation",
+  "preprocessing": {
+    "scaler": {
+      "type": "minmax",
+      "params": {
+        "feature_range": [0, 1]
+      }
+    },
+    "imputation": {
+      "strategy": "knn",
+      "params": {
+        "n_neighbors": 2,
+        "weights": "uniform"
+      }
+    }
+  }
 }
 ```
 
