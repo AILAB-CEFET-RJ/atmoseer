@@ -822,8 +822,8 @@ class open_dataset:
                     "   {:50} {} {}".format(item, size, ds.variables[item].dtype)
                 )
 
-        # for item in ds.groups.keys():
-        #     groups.append("   {:50}".format(item))
+        for item in ds.groups.keys():
+            group.append("   {:50}".format(item))
 
         return "\n".join(
             [str(self.__class__)]
@@ -1221,8 +1221,8 @@ class open_mfdataset:
                     "   {:50} {} {}".format(item, size, ds.variables[item].dtype)
                 )
 
-        # for item in ds.groups.keys():
-        #     groups.append("   {:50}".format(item))
+        for item in ds.groups.keys():
+            group.append("   {:50}".format(item))
 
         return "\n".join(
             [str(self.__class__)]
@@ -1293,8 +1293,8 @@ class open_mfdataset:
                     "   {:50} {} {}".format(item, size, ds.variables[item].dtype)
                 )
 
-        # for item in ds.groups.keys():
-        #     groups.append("   {:50}".format(item))
+        for item in ds.groups.keys():
+            group.append("   {:50}".format(item))
 
         return "\n".join(
             [str(self.__class__)]
