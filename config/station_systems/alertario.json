@@ -23,5 +23,295 @@
     "hour_sin",
     "hour_cos"
   ],
-  "target_column": "precipitation"
+  "target_column": "precipitation",
+  "stations": {
+    "alto_da_boa_vista": {
+      "name": "Alto da Boa Vista",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9658,
+      "longitude": -43.2783,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "anchieta": {
+      "name": "Anchieta",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8269,
+      "longitude": -43.4033,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "av_brasil_mendanha": {
+      "name": "Av. Brasil/Mendanha",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8569,
+      "longitude": -43.5411,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "bangu": {
+      "name": "Bangu",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8803,
+      "longitude": -43.4658,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "barrinha": {
+      "name": "Barra/Barrinha",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -23.0085,
+      "longitude": -43.2997,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "campo_grande": {
+      "name": "Campo Grande",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9036,
+      "longitude": -43.5619,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "cidade_de_deus": {
+      "name": "Jacarepaguá/Cidade de Deus",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9456,
+      "longitude": -43.3628,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "copacabana": {
+      "name": "Copacabana",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9864,
+      "longitude": -43.1894,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "grajau": {
+      "name": "Est. Grajaú/Jacarepaguá",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9256,
+      "longitude": -43.3158,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "grande_meier": {
+      "name": "Grande Méier",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8906,
+      "longitude": -43.2781,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "grota_funda": {
+      "name": "Grota Funda",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -23.0144,
+      "longitude": -43.5214,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "guaratiba": {
+      "name": "Guaratiba",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -23.0503,
+      "longitude": -43.5947,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "ilha_do_governador": {
+      "name": "Ilha do Governador",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8181,
+      "longitude": -43.2103,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "iraja": {
+      "name": "Irajá",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8269,
+      "longitude": -43.3369,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "jardim_botanico": {
+      "name": "Jardim Botânico",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9728,
+      "longitude": -43.2239,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "laranjeiras": {
+      "name": "Laranjeiras",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9406,
+      "longitude": -43.1875,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "madureira": {
+      "name": "Madureira",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8733,
+      "longitude": -43.3389,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "penha": {
+      "name": "Penha",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8444,
+      "longitude": -43.2753,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "piedade": {
+      "name": "Piedade",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8918,
+      "longitude": -43.3101,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "recreio": {
+      "name": "Recreio dos Bandeirantes",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -23.01,
+      "longitude": -43.4406,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "riocentro": {
+      "name": "Barra/Riocentro",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9772,
+      "longitude": -43.3916,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "rocinha": {
+      "name": "Rocinha",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9858,
+      "longitude": -43.245,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "santa_cruz": {
+      "name": "Santa Cruz",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9094,
+      "longitude": -43.6844,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "santa_teresa": {
+      "name": "Santa Teresa",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9317,
+      "longitude": -43.1964,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "sao_cristovao": {
+      "name": "São Cristóvão",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8967,
+      "longitude": -43.2217,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "saude": {
+      "name": "Saúde",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8961,
+      "longitude": -43.1879,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "sepetiba": {
+      "name": "Sepetiba",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9689,
+      "longitude": -43.7117,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "tanque": {
+      "name": "Jacarepaguá/Tanque",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9125,
+      "longitude": -43.3647,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "tijuca": {
+      "name": "Tijuca",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9319,
+      "longitude": -43.2217,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "tijuca_muda": {
+      "name": "Tijuca/Muda",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9328,
+      "longitude": -43.2433,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "urca": {
+      "name": "Urca",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9558,
+      "longitude": -43.1667,
+      "altitude_m": null,
+      "operation_start": null
+    },
+    "vidigal": {
+      "name": "Vidigal",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.9925,
+      "longitude": -43.2331,
+      "altitude_m": null,
+      "operation_start": null
+    }
+  }
 }

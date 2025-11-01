@@ -17,6 +17,7 @@ Preprocessing behaviour is controlled by JSON files under `config/station_system
 | `column_mapping` | Maps raw column names to the canonical names expected by the pipeline. |
 | `features` | Toggles that enable or skip feature engineering steps (`add_wind_related_features`, `add_hour_related_features`, `normalize_predictors`, `impute_missing_values`). |
 | `predictor_columns` | Ordered list of predictor columns to retain after feature engineering. |
+| `stations` | Metadata indexed by station id (name, state, status, coordinates, altitude, start date). |
 | `target_column` | Name of the target variable to keep with the predictors. |
 
 Example (`config/station_systems/inmet.json`):
@@ -46,6 +47,17 @@ Example (`config/station_systems/inmet.json`):
     "hour_sin",
     "hour_cos"
   ],
+  "stations": {
+    "A601": {
+      "name": "SEROPEDICA-ECOLOGIA AGRICOLA",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.75777777,
+      "longitude": -43.68472221,
+      "altitude_m": 35.0,
+      "operation_start": "2000-05-23"
+    }
+  },
   "target_column": "precipitation"
 }
 ```
@@ -98,4 +110,3 @@ Warnings are logged if mapped columns or predictors are missing, and the run abo
 - If you encounter `ModuleNotFoundError: No module named 'config'`, verify that `PYTHONPATH` includes `src` or call the Make target.
 - To disable a processing step (for example, wind features on gauge-only stations), set the corresponding flag to `false` in the system JSON.
 - After editing JSON files, keep them valid by running a quick lint (`python -m json.tool config/station_systems/<file>.json`).
-

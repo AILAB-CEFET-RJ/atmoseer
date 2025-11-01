@@ -23,5 +23,241 @@
     "hour_sin",
     "hour_cos"
   ],
-  "target_column": "precipitation"
+  "target_column": "precipitation",
+  "stations": {
+    "A601": {
+      "name": "SEROPEDICA-ECOLOGIA AGRICOLA",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.75777777,
+      "longitude": -43.68472221,
+      "altitude_m": 35.0,
+      "operation_start": "2000-05-23"
+    },
+    "A602": {
+      "name": "RIO DE JANEIRO-MARAMBAIA",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -23.05027777,
+      "longitude": -43.59555555,
+      "altitude_m": 12.0,
+      "operation_start": "2002-11-07"
+    },
+    "A603": {
+      "name": "DUQUE DE CAXIAS - XEREM",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.58972221,
+      "longitude": -43.28222221,
+      "altitude_m": 22.0,
+      "operation_start": "2002-10-20"
+    },
+    "A604": {
+      "name": "CAMBUCI",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -21.58749999,
+      "longitude": -41.95833333,
+      "altitude_m": 46.0,
+      "operation_start": "2002-11-19"
+    },
+    "A606": {
+      "name": "ARRAIAL DO CABO",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.97527777,
+      "longitude": -42.02138888,
+      "altitude_m": 5.0,
+      "operation_start": "2006-09-21"
+    },
+    "A607": {
+      "name": "CAMPOS DOS GOYTACAZES",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -21.71472222,
+      "longitude": -41.34388888,
+      "altitude_m": 17.0,
+      "operation_start": "2006-09-24"
+    },
+    "A608": {
+      "name": "MACAE",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.3761111,
+      "longitude": -41.81194444,
+      "altitude_m": 28.0,
+      "operation_start": "2006-09-21"
+    },
+    "A609": {
+      "name": "RESENDE",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.45138888,
+      "longitude": -44.44499999,
+      "altitude_m": 438.83,
+      "operation_start": "2006-09-28"
+    },
+    "A610": {
+      "name": "PICO DO COUTO",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.46472222,
+      "longitude": -43.29138888,
+      "altitude_m": 1777.0,
+      "operation_start": "2006-10-21"
+    },
+    "A611": {
+      "name": "VALENCA",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.35805555,
+      "longitude": -43.69555555,
+      "altitude_m": 370.0,
+      "operation_start": "2006-09-26"
+    },
+    "A618": {
+      "name": "TERESOPOLIS-PARQUE NACIONAL",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.4486111,
+      "longitude": -42.98694444,
+      "altitude_m": 981.0,
+      "operation_start": "2006-10-31"
+    },
+    "A619": {
+      "name": "PARATY",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -23.2236111,
+      "longitude": -44.72694443,
+      "altitude_m": 3.0,
+      "operation_start": "2006-11-18"
+    },
+    "A620": {
+      "name": "CAMPOS DOS GOYTACAZES - SAO TOME",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.04166666,
+      "longitude": -41.05166666,
+      "altitude_m": 7.0,
+      "operation_start": "2008-06-12"
+    },
+    "A621": {
+      "name": "RIO DE JANEIRO - VILA MILITAR",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.86138888,
+      "longitude": -43.41138888,
+      "altitude_m": 30.43,
+      "operation_start": "2007-04-12"
+    },
+    "A624": {
+      "name": "NOVA FRIBURGO - SALINAS",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.33472221,
+      "longitude": -42.67694443,
+      "altitude_m": 1070.0,
+      "operation_start": "2010-09-17"
+    },
+    "A625": {
+      "name": "TRES RIOS",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.09833333,
+      "longitude": -43.20833333,
+      "altitude_m": 295.0,
+      "operation_start": "2016-06-07"
+    },
+    "A626": {
+      "name": "RIO CLARO",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.653579,
+      "longitude": -44.040916,
+      "altitude_m": 516.0,
+      "operation_start": "2016-06-02"
+    },
+    "A627": {
+      "name": "NITEROI",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.86749999,
+      "longitude": -43.10194444,
+      "altitude_m": 6.0,
+      "operation_start": "2018-07-12"
+    },
+    "A628": {
+      "name": "ANGRA DOS REIS",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.97555554,
+      "longitude": -44.30333333,
+      "altitude_m": 6.0,
+      "operation_start": "2017-08-24"
+    },
+    "A629": {
+      "name": "CARMO",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -21.938745,
+      "longitude": -42.600936,
+      "altitude_m": 293.0,
+      "operation_start": "2018-10-10"
+    },
+    "A630": {
+      "name": "SANTA MARIA MADALENA",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -21.95055555,
+      "longitude": -42.01027777,
+      "altitude_m": 517.0,
+      "operation_start": "2018-10-15"
+    },
+    "A636": {
+      "name": "RIO DE JANEIRO - JACAREPAGUA",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.93999999,
+      "longitude": -43.40277777,
+      "altitude_m": 20.0,
+      "operation_start": "2017-08-09"
+    },
+    "A637": {
+      "name": "Paty do Alferes - Avelar",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.34722221,
+      "longitude": -43.41777777,
+      "altitude_m": 508.0,
+      "operation_start": "2022-11-09"
+    },
+    "A652": {
+      "name": "RIO DE JANEIRO - FORTE DE COPACABANA",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.98833333,
+      "longitude": -43.19055555,
+      "altitude_m": 25.59,
+      "operation_start": "2007-05-17"
+    },
+    "A659": {
+      "name": "SILVA JARDIM",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.64583333,
+      "longitude": -42.41555555,
+      "altitude_m": 19.0,
+      "operation_start": "2015-08-27"
+    },
+    "A667": {
+      "name": "SAQUAREMA - SAMPAIO CORREIA",
+      "state": "RJ",
+      "status": "Operante",
+      "latitude": -22.8711111,
+      "longitude": -42.60888888,
+      "altitude_m": 26.0,
+      "operation_start": "2015-09-01"
+    }
+  }
 }
