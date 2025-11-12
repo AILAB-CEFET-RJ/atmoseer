@@ -1,7 +1,7 @@
-import logging
 import os
-
 import netCDF4 as nc
+import numpy as np
+import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -12,10 +12,7 @@ if not logger.handlers:
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-
-def glaciacao_topo_nuvem(
-    pasta_c11: str, pasta_c14: str, pasta_c15: str, pasta_saida: str
-):
+def glaciacao_topo_nuvem(pasta_c11: str, pasta_c14: str, pasta_c15: str, pasta_saida: str):
     """
     Calcula a glaciação do topo da nuvem como uma combinação tri-espectral (C11, C14, C15).
 
@@ -32,7 +29,7 @@ def glaciacao_topo_nuvem(
     pfx11 = arquivos_c11[0].split("_", 1)[0]
     pfx14 = arquivos_c14[0].split("_", 1)[0]
     pfx15 = arquivos_c15[0].split("_", 1)[0]
-    pfx_feat = "GTN"
+    pfx_feat = 'GTN'
 
     timestamps = [f.split("_", 1)[1] for f in arquivos_c11 if "_" in f]
     os.makedirs(pasta_saida, exist_ok=True)
@@ -56,34 +53,20 @@ def glaciacao_topo_nuvem(
             continue
 
         try:
-            with (
-                nc.Dataset(arq11, "r") as nc1,
-                nc.Dataset(arq14, "r") as nc2,
-                nc.Dataset(arq15, "r") as nc3,
-                nc.Dataset(arq_out, "w") as out,
-            ):
+            with nc.Dataset(arq11, 'r') as nc1, nc.Dataset(arq14, 'r') as nc2, nc.Dataset(arq15, 'r') as nc3, nc.Dataset(arq_out, 'w') as out:
                 for nome_dim, dim in nc1.dimensions.items():
-                    out.createDimension(
-                        nome_dim, len(dim) if not dim.isunlimited() else None
-                    )
+                    out.createDimension(nome_dim, len(dim) if not dim.isunlimited() else None)
                 vars_salvas = 0
                 for nome_var in nc1.variables:
                     if nome_var in nc2.variables and nome_var in nc3.variables:
-                        dados = (
-                            nc1.variables[nome_var][:] - nc2.variables[nome_var][:]
-                        ) - (nc2.variables[nome_var][:] - nc3.variables[nome_var][:])
-                        var_out = out.createVariable(
-                            nome_var, "f4", nc1.variables[nome_var].dimensions
-                        )
+                        dados = (nc1.variables[nome_var][:] - nc2.variables[nome_var][:]) - \
+                                (nc2.variables[nome_var][:] - nc3.variables[nome_var][:])
+                        var_out = out.createVariable(nome_var, 'f4', nc1.variables[nome_var].dimensions)
                         var_out[:] = dados
-                        var_out.description = (
-                            "GTN: glaciação topo da nuvem (tri-espectral)"
-                        )
+                        var_out.description = 'GTN: glaciação topo da nuvem (tri-espectral)'
                         vars_salvas += 1
                 if vars_salvas == 0:
-                    logger.warning(
-                        f"Nenhuma variável processada para {ts}, possível incompatibilidade"
-                    )
+                    logger.warning(f"Nenhuma variável processada para {ts}, possível incompatibilidade")
                 out.description = "Glaciação topo da nuvem (GTN)"
-        except Exception:
+        except Exception as e:
             logger.exception(f"Erro ao processar {ts}")

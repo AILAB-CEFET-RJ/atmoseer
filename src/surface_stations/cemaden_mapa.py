@@ -1,25 +1,28 @@
-import folium
 import requests
-
 from src.surface_stations.retrieve_ws_cemaden import get_token
-from src.utils.env_loader import get_cemaden_credentials
-
+import VAR
+import folium
 url = "https://sws.cemaden.gov.br/PED/rest/pcds-cadastro/dados-cadastrais"
 
-nome_secreto, senha_secreta = get_cemaden_credentials()
-token = get_token(nome_secreto, senha_secreta)
+
+token = get_token(VAR.nome_secreto, VAR.senha_secreta)
 codibge = "3304557"
 
-headers = {"token": token}
+headers = {
+    "token": token
+}
 
-params = {"codibge": codibge, "formato": "json"}
+params = {
+    "codibge": codibge,
+    "formato": "json"  
+}
 
 response = requests.get(url, headers=headers, params=params)
 posicoes = {}
 if response.status_code == 200:
     estacoes = response.json()
     print("Número de estações encontradas:", len(estacoes))
-    for estacao in estacoes:
+    for estacao in estacoes:  
         codigo = estacao.get("codestacao")
         lat = estacao.get("latitude")
         lon = estacao.get("longitude")
@@ -27,7 +30,7 @@ if response.status_code == 200:
             posicoes[codigo] = (lat, lon)
 
     print("Dicionário de posições das estações:")
-    for cod, coords in list(posicoes.items()):
+    for cod, coords in list(posicoes.items()): 
         print(f"{cod}: {coords}")
 else:
     print("Erro ao buscar estações:", response.status_code)
@@ -38,7 +41,7 @@ for codestacao, (lat, lon) in posicoes.items():
     folium.Marker(
         location=[lat, lon],
         popup=f"Estação: {codestacao}",
-        icon=folium.Icon(color="blue", icon="info-sign"),
+        icon=folium.Icon(color="blue", icon="info-sign")
     ).add_to(mapa)
 
 mapa.save("mapa_estacoes_rj.html")

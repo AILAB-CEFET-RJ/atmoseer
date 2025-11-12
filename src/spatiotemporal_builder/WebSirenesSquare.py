@@ -25,29 +25,22 @@ class WebSirenesSquare(ERA5Square):
         Args:
             square (Square): The square to check for keys
         """
-        keys = [
-            x.stem
-            for x in Path(self.websirenes_keys.websirenes_keys_path).glob("*.parquet")
-        ]
+        keys = [x.stem for x in Path(self.websirenes_keys.websirenes_keys_path).glob("*.parquet")]
         websirenes_keys = []
         for key in keys:
             key_lat, key_lon = map(float, key.split("_"))
 
             if (
                 verbose
-                and not (
-                    key_lat < square.bottom_left[0] or key_lat > square.top_left[0]
-                )
+                and not (key_lat < square.bottom_left[0] or key_lat > square.top_left[0])
                 and not (key_lon < square.top_left[1] or key_lon > square.top_right[1])
             ):
-                log.success(
-                    f"""
+                log.success(f"""
                     Lat and Lon Square:
                     {square.top_left[0]}{square.top_left[1]} - {square.top_right[0]}{square.top_right[1]}
                     |              {key_lat} {key_lon}                       |
                     {square.bottom_left[0]}{square.bottom_left[1]} - {square.bottom_right[0]}{square.bottom_right[1]}
-                """
-                )
+                """)
 
             if key_lat < square.bottom_left[0] or key_lat > square.top_left[0]:
                 continue
@@ -69,9 +62,7 @@ class WebSirenesSquare(ERA5Square):
         ds_time: xr.Dataset,
     ) -> float:
         if len(websirenes_keys) == 0:
-            return super().get_era5_single_levels_precipitation_in_square(
-                square, ds_time
-            )
+            return super().get_era5_single_levels_precipitation_in_square(square, ds_time)
 
         precipitations_15_min_aggregated: list[float] = []
         for key in websirenes_keys:
@@ -103,19 +94,13 @@ class WebSirenesSquare(ERA5Square):
                 # 15h15 = 0.00 mm precipitation
                 # If either of these situations happen:
                 # Compare the aggregated sum with the ERA5 data, we use the most significant value
-                m15_era5 = super().get_era5_single_levels_precipitation_in_square(
-                    square, ds_time
-                )
+                m15_era5 = super().get_era5_single_levels_precipitation_in_square(square, ds_time)
                 m15 = np.array([m15.sum(), m15_era5]).max()
-            max_between_m15_and_h01 = np.array(
-                [m15.sum().item(), h01.sum().item()]
-            ).max()
+            max_between_m15_and_h01 = np.array([m15.sum().item(), h01.sum().item()]).max()
             precipitations_15_min_aggregated.append(max_between_m15_and_h01.item())
 
         max_precipitation = max(precipitations_15_min_aggregated)
         # see "ge=0, but txt has -99.99 values" comment in WebSirenesParser.py
         if max_precipitation < 0:
-            return super().get_era5_single_levels_precipitation_in_square(
-                square, ds_time
-            )
+            return super().get_era5_single_levels_precipitation_in_square(square, ds_time)
         return max_precipitation
