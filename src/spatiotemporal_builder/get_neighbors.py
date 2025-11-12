@@ -4,9 +4,7 @@ import numpy as np
 import numpy.typing as npt
 
 
-def get_upper_neighbor(
-    lat: float, lon: float, sorted_latitudes_ascending: npt.NDArray[np.float32]
-):
+def get_upper_neighbor(lat: float, lon: float, sorted_latitudes_ascending: npt.NDArray[np.float32]):
     lat_idx = bisect.bisect_right(sorted_latitudes_ascending, lat)
     if lat_idx < len(sorted_latitudes_ascending):
         return sorted_latitudes_ascending[lat_idx], lon
@@ -22,9 +20,7 @@ def get_bottom_neighbor(
     return None
 
 
-def get_left_neighbor(
-    lat: float, lon: float, sorted_longitudes_ascending: npt.NDArray[np.float32]
-):
+def get_left_neighbor(lat: float, lon: float, sorted_longitudes_ascending: npt.NDArray[np.float32]):
     lon_idx = bisect.bisect_left(sorted_longitudes_ascending, lon)
     if lon_idx > 0:
         return lat, sorted_longitudes_ascending[lon_idx - 1]

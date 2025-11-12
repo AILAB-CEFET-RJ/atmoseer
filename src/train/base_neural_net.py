@@ -1,21 +1,10 @@
-import numpy as np
-import torch.nn as nn
-
 from train.base_learner import BaseLearner
+import torch.nn as nn
 from train.early_stopping import EarlyStopping
-
+import numpy as np
 
 class BaseNeuralNet(nn.Module, BaseLearner):
-    def fit(
-        self,
-        n_epochs,
-        optimizer,
-        train_loader,
-        val_loader,
-        patience,
-        criterion,
-        pipeline_id,
-    ):
+    def fit(self, n_epochs, optimizer, train_loader, val_loader, patience, criterion, pipeline_id):
         # to track the training loss as the model trains
         train_losses = []
         # to track the validation loss as the model trains
@@ -29,6 +18,7 @@ class BaseNeuralNet(nn.Module, BaseLearner):
         early_stopping = EarlyStopping(patience=patience, verbose=True)
 
         for epoch in range(n_epochs):
+
             ###################
             # train the model #
             ###################
@@ -43,9 +33,8 @@ class BaseNeuralNet(nn.Module, BaseLearner):
 
                 # calculate the loss
                 loss = criterion(output, target.float())
-                assert not (
-                    np.isnan(loss.item()) or loss.item() > 1e6
-                ), f"Loss explosion: {loss.item()}"
+                assert not (np.isnan(loss.item()) or loss.item() >
+                            1e6), f"Loss explosion: {loss.item()}"
 
                 # see https://discuss.pytorch.org/t/per-class-and-per-sample-weighting/25530
                 loss = loss * sample_weights
@@ -81,11 +70,9 @@ class BaseNeuralNet(nn.Module, BaseLearner):
 
             epoch_len = len(str(n_epochs))
 
-            print_msg = (
-                f"[{(epoch + 1):>{epoch_len}}/{n_epochs:>{epoch_len}}] "
-                + f"train_loss: {train_loss:.5f} "
-                + f"valid_loss: {valid_loss:.5f}"
-            )
+            print_msg = (f'[{(epoch+1):>{epoch_len}}/{n_epochs:>{epoch_len}}] ' +
+                         f'train_loss: {train_loss:.5f} ' +
+                         f'valid_loss: {valid_loss:.5f}')
 
             print(print_msg)
 
@@ -108,28 +95,25 @@ class BaseNeuralNet(nn.Module, BaseLearner):
         return out
 
     # def training_step(self, batch):
-    #     images, labels = batch
+    #     images, labels = batch 
     #     out = self(images)                  # Generate predictions
     #     loss = F.cross_entropy(out, labels) # Calculate loss
     #     return loss
-
+    
     # def validation_step(self, batch):
-    #     images, labels = batch
+    #     images, labels = batch 
     #     out = self(images)                    # Generate predictions
     #     loss = F.cross_entropy(out, labels)   # Calculate loss
     #     acc = accuracy(out, labels)           # Calculate accuracy
     #     return {'val_loss': loss.detach(), 'val_acc': acc}
-
+        
     # def validation_epoch_end(self, outputs):
     #     batch_losses = [x['val_loss'] for x in outputs]
     #     epoch_loss = torch.stack(batch_losses).mean()   # Combine losses
     #     batch_accs = [x['val_acc'] for x in outputs]
     #     epoch_acc = torch.stack(batch_accs).mean()      # Combine accuracies
     #     return {'val_loss': epoch_loss.item(), 'val_acc': epoch_acc.item()}
-
+    
     def epoch_end(self, epoch, result):
-        print(
-            "Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}, val_acc: {:.4f}".format(
-                epoch, result["train_loss"], result["val_loss"], result["val_acc"]
-            )
-        )
+        print("Epoch [{}], train_loss: {:.4f}, val_loss: {:.4f}, val_acc: {:.4f}".format(
+            epoch, result['train_loss'], result['val_loss'], result['val_acc']))

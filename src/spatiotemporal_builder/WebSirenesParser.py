@@ -97,11 +97,7 @@ class WebSirenesParser:
         timeframe = match.group("timeframe")
 
         m15, m30, h01, h02, h03, h04, h24, h96, station_id = [
-            (
-                np.nan
-                if x == "null"
-                else float(x.replace(",", ".")) if "," in x else float(x)
-            )
+            np.nan if x == "null" else float(x.replace(",", ".")) if "," in x else float(x)
             for x in timeframe.strip().split()
         ]
 

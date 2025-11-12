@@ -8,7 +8,6 @@ Cleans:
 - Strips whitespace and lowercases STATION_ID
 - Saves cleaned CSV and parquet to config/
 """
-
 import pandas as pd
 from pathlib import Path
 import sys
@@ -54,14 +53,14 @@ def clean():
     for col in ["VL_LATITUDE", "VL_LONGITUDE"]:
         if col in df.columns:
             # remove quotes and coerce
-            df[col] = df[col].astype(str).str.replace('"', "")
-            df[col] = df[col].str.replace(",", ".")
+            df[col] = df[col].astype(str).str.replace('"', '')
+            df[col] = df[col].str.replace(',', '.')
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
     # Clean altitude: replace comma decimal separators, remove quotes, coerce
     if "VL_ALTITUDE" in df.columns:
-        df["VL_ALTITUDE"] = df["VL_ALTITUDE"].astype(str).str.replace('"', "")
-        df["VL_ALTITUDE"] = df["VL_ALTITUDE"].str.replace(",", ".")
+        df["VL_ALTITUDE"] = df["VL_ALTITUDE"].astype(str).str.replace('"', '')
+        df["VL_ALTITUDE"] = df["VL_ALTITUDE"].str.replace(',', '.')
         df["VL_ALTITUDE"] = pd.to_numeric(df["VL_ALTITUDE"], errors="coerce")
 
     # Clean date
@@ -74,16 +73,7 @@ def clean():
             df[col] = df[col].astype(str).str.strip()
 
     # Reorder columns to a sensible order if exists
-    desired = [
-        "STATION_ID",
-        "DC_NOME",
-        "SG_ESTADO",
-        "CD_SITUACAO",
-        "VL_LATITUDE",
-        "VL_LONGITUDE",
-        "VL_ALTITUDE",
-        "DT_INICIO_OPERACAO",
-    ]
+    desired = ["STATION_ID", "DC_NOME", "SG_ESTADO", "CD_SITUACAO", "VL_LATITUDE", "VL_LONGITUDE", "VL_ALTITUDE", "DT_INICIO_OPERACAO"]
     cols = [c for c in desired if c in df.columns]
     rest = [c for c in df.columns if c not in cols]
     df = df[cols + rest]
@@ -103,5 +93,5 @@ def clean():
     print(df.dtypes)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     clean()

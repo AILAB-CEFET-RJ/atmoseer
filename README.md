@@ -6,8 +6,7 @@ AtmoSeer is a set of Python scripts for downloading, processing, and analyzing a
 
 ## Installation
 
-
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/your-org/atmoseer.git
@@ -106,27 +105,6 @@ atmoseer/
 * [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/)
 * Linux or WSL (recommended)
 * Internet access for installing packages and accessing NASA endpoints
-
----
-
-## Guide to Collaborators
-
-Welcome! Please follow these guidelines to keep the project consistent and secure.
-
-- Communicate and document **only in English** so every contributor can follow along.
-- Never commit secrets, credentials, or private datasets. Store sensitive values in `.env` files that stay out of version control.
-- Use GitFlow conventions: branch from `develop` (or `main` if specified), follow feature/hotfix/release prefixes, and open pull requests before merging.
-- Prefer small, focused commits with clear messages; reference issues or tasks when possible.
-- Keep coding style consistent with the existing modules; run linting/formatting tools provided by the project before submitting code (see the tooling notes below).
-- Add or update tests whenever you change behaviour, and ensure the full test suite passes locally.
-- Discuss significant architectural or API changes with maintainers before implementation.
-- Respect code reviews: respond to feedback promptly and revise your changes as needed.
-
-### Code Style Tooling
-
-1. Install/update the Conda environment so that `black`, `ruff`, and `pre-commit` are available.
-2. Run `make format` for automatic formatting (`ruff format` + `black`) and `make lint` to check for style and static-analysis issues.
-3. Optional but recommended: `make pre-commit-install` to set up git hooks that run Ruff and Black before each commit.
 
 ---
 

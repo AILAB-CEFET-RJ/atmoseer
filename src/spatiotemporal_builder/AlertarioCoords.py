@@ -23,9 +23,7 @@ def get_alertario_coords():
     AlertarioCoordsSchema.validate(alertario_coords)
 
     alertario_coords["latitude"] = alertario_coords["latitude"].apply(lambda x: str(x))
-    alertario_coords["longitude"] = alertario_coords["longitude"].apply(
-        lambda x: str(x)
-    )
+    alertario_coords["longitude"] = alertario_coords["longitude"].apply(lambda x: str(x))
     alertario_coords["estacao_desc"] = alertario_coords["estacao_desc"].str.strip()
 
     AlertarioCoordsSchemaLatLongStr.validate(alertario_coords)

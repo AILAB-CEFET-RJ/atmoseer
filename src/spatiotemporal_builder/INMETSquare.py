@@ -26,19 +26,15 @@ class INMETSquare(ERA5Square):
 
             if (
                 verbose
-                and not (
-                    key_lat < square.bottom_left[0] or key_lat > square.top_left[0]
-                )
+                and not (key_lat < square.bottom_left[0] or key_lat > square.top_left[0])
                 and not (key_lon < square.top_left[1] or key_lon > square.top_right[1])
             ):
-                log.success(
-                    f"""
+                log.success(f"""
                     Lat and Lon Square:
                     {square.top_left[0]}{square.top_left[1]} - {square.top_right[0]}{square.top_right[1]}
                     |              {key_lat} {key_lon}                       |
                     {square.bottom_left[0]}{square.bottom_left[1]} - {square.bottom_right[0]}{square.bottom_right[1]}
-                """
-                )
+                """)
 
             if key_lat < square.bottom_left[0] or key_lat > square.top_left[0]:
                 continue
@@ -60,9 +56,7 @@ class INMETSquare(ERA5Square):
         ds_time: xr.Dataset,
     ) -> float:
         if len(inmet_keys) == 0:
-            return super().get_era5_single_levels_precipitation_in_square(
-                square, ds_time
-            )
+            return super().get_era5_single_levels_precipitation_in_square(square, ds_time)
         precipitations: list[float] = []
         for key in inmet_keys:
             df_web = self.inmet_keys.load_key(key)
@@ -70,9 +64,7 @@ class INMETSquare(ERA5Square):
             h1 = df_web_filtered["precipitation"]
             if h1.isnull().all():
                 h1 = np.array(
-                    super().get_era5_single_levels_precipitation_in_square(
-                        square, ds_time
-                    )
+                    super().get_era5_single_levels_precipitation_in_square(square, ds_time)
                 )
             precipitations.append(h1.item())
         return max(precipitations)
