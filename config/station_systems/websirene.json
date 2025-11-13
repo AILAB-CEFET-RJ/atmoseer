@@ -1,0 +1,68 @@
+{
+  "column_mapping": {
+    "datetime": "datetime",
+    "chuvas": "precipitation"
+  },
+  "features": {
+    "add_wind_related_features": false,
+    "add_hour_related_features": true,
+    "normalize_predictors": true,
+    "impute_missing_values": true
+  },
+  "predictor_columns": [
+    "precipitation",
+    "hour_sin",
+    "hour_cos"
+  ],
+  "target_column": "precipitation",
+  "stations": {
+    "22": {
+      "name": "VIDIGAL",
+      "state": "RJ",
+      "status": "Operational",
+      "latitude": -22.9904,
+      "longitude": -43.2405,
+      "altitude_m": 100.0,
+      "operation_start": "2000-01-01"
+    },
+    "34": {
+      "name": "ROCINHA",
+      "state": "RJ",
+      "status": "Operational",
+      "latitude": -22.9806,
+      "longitude": -43.2452,
+      "altitude_m": 150.0,
+      "operation_start": "2000-01-01"
+    }
+  },
+  "quality": {
+    "enabled": true,
+    "flag_column_suffix": "_flag",
+    "include_flag_columns": true,
+    "checks": [
+      {
+        "type": "bounds",
+        "name": "precipitation_physical_limits",
+        "columns": ["precipitation", "precip_4h", "precip_24h", "precip_96h"],
+        "min": 0,
+        "max": 300, 
+        "actions": ["clip", "flag"]
+      }
+    ]
+  },
+  "preprocessing": {
+    "scaler": {
+      "type": "minmax",
+      "params": { "feature_range": [0, 1] }
+    },
+    "imputation": {
+      "strategy": "knn",
+      "params": { "n_neighbors": 2 }
+    }
+  },
+  "report": {
+    "enabled": true,
+    "fields": ["missing_fraction", "imputed_fraction", "min", "max"],
+    "summary": ["rows", "columns", "missing_fraction", "imputed_fraction"]
+  }
+}
