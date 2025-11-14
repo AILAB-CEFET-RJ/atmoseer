@@ -15,6 +15,7 @@ This directory concentrates the scripts that download ("retrieve") raw observati
 | `retrieve_ws_cemaden.py` | Cemaden PCD network | `data/ws/cemaden/raw/<CODE>.parquet` | Requires credentials; handles token caching (`config/token_demaden.json`). |
 | `retrieve_ws_alertario.py` | AlertaRio (COR/RJ) meteorological stations | `data/landing/<station>.csv` | Works on previously downloaded text files under `data/RAW_data/COR/meteorologica`. |
 | `retrieve_ws_redemet.py` | REDEMET aerodrome reports | `<output>.csv` + `log.csv` | Requires a DECEA API key; runs hourly requests for the selected time span. |
+| `retrieve_ws_websirene.py` | COR/RJ WebSirene pluviometers | `data/ws/websirene/<ID>.csv` | Pulls 10-minute rainfall totals for a single numeric station ID via the public XML feed. |
 
 Each section below details CLI options, expected inputs and a runnable example.
 
@@ -96,6 +97,24 @@ python3 src/surface_stations/retrieve_ws_redemet.py \
   --output_file data/ws/redemet/SBGL_202301
 ```
 If the API returns HTTP 429 (rate limit), the script waits and retries automatically. Large ranges may take considerable time because one request is issued per hour.
+
+## WebSirene - `retrieve_ws_websirene.py`
+Downloads rainfall totals from the COR/RJ WebSirene XML feed for a single station ID, iterating every 10 minutes between the requested timestamps. Useful when you know the numeric identifier exposed in `<estacao id="...">`. The exported CSV contains the station metadata (`id`, `nome`, `type`, `latitude`, `longitude`) plus the five-minute rainfall total (`rains`, pulled from the XML `m5` field) and the timestamp of the slot.
+
+**Requirements**
+- Start/end datetimes (`--start-date`, `--end-date`) in `DD/MM/YYYY HH:MM` (or `DD-MM-YYYY HH:MM`) format. Each 10-minute slot within the window is requested individually.
+- A numeric station identifier (`--station-id`) as listed by WebSirene.
+- Optional custom output directory (`--output-dir`, defaults to `data/ws/websirene`).
+
+**Usage**
+```bash
+PYTHONPATH=src python3 src/surface_stations/retrieve_ws_websirene.py \
+  --start-date "01/01/2024 00:00" \
+  --end-date "02/01/2024 23:50" \
+  --station-id 22 \
+  --output-dir data/ws/websirene
+```
+The script caches all successful responses in memory and exports a single chronologically sorted CSV: `data/ws/websirene/22.csv` in the example above. Missing timestamps simply log warnings and are skipped.
 
 ---
 Need to support another station system? Create a new retrieval script beside the ones above and add its documentation to this file so the team can discover it easily.
