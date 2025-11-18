@@ -1,164 +1,388 @@
-
+import os
+import math
 import pandas as pd
 import numpy as np
-import math
+from PIL import Image
+import argparse
+from radar_data import RadarSumare
+import matplotlib.pyplot as plt
+import seaborn as sns
 from scipy import stats
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-import sys, getopt, os, re
-from PIL import Image, ImageDraw
-from config import globals
-
-def rgb_distance(c1, c2):
-    return math.sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2 + (c1[2] - c2[2])**2)
-
-def interpolate_value(rgb, legend_colors, legend_values):
-    if rgb == (0,0,0):
-        return 0
-    # Calcular distâncias entre a cor fornecida e todas as cores da legenda
-    distances = [rgb_distance(rgb, lc) for lc in legend_colors]
-
-    # Identificar as duas cores mais próximas na legenda
-    min_idx1 = distances.index(min(distances))  # Índice da cor mais próxima
-    distances[min_idx1] = float('inf')  # Excluir a cor mais próxima para achar a segunda
-    min_idx2 = distances.index(min(distances))  # Índice da segunda cor mais próxima
-
-    # Obter as cores e valores correspondentes
-    c1, c2 = legend_colors[min_idx1], legend_colors[min_idx2]
-    v1, v2 = legend_values[min_idx1], legend_values[min_idx2]
-
-    # Calcular o peso de interpolação (t)
-    dist_c1_c2 = rgb_distance(c1, c2)
-    dist_c1_rgb = rgb_distance(c1, rgb)
-    t = dist_c1_rgb / dist_c1_c2 if dist_c1_c2 != 0 else 0
-
-    # Interpolar o valor
-    interpolated_value = v1 + t * (v2 - v1)
-    return interpolated_value
+import csv
+from pathlib import Path
+from datetime import datetime
+from typing import Tuple, Any
+import warnings
+warnings.filterwarnings("ignore")
 
 
-def get_radar_data(station_name, met):
-    df_local = pd.read_csv('./WeatherStations.csv') 
-    df_local = df_local[df_local['STATION_ID'] == station_name]
-    
-    if station_name in STATION_NAMES_FOR_RJ:
-        if met:
-            df = pd.read_csv('./data/landing/'+station_name + '.csv') # COR
-        else:
-            df = pd.read_csv('./data/landing/plv/'+station_name + '.csv')
-    else:
-        df = pd.read_parquet('./data/inmet-data/'+station_name + '.parquet')
-    df['reflect'] = np.nan
-    vlat = df_local['VL_LATITUDE'].iloc[0]
-    vlon = df_local['VL_LONGITUDE'].iloc[0]
-    print(station_name)
-    i = 0
-    
-    while i < len(df):
-        df1 = df[df.index == i]
-        if station_name in STATION_NAMES_FOR_RJ:
-            arquivo = df1['Dia'].iloc[0][:4] +'_'+ df1['Dia'].iloc[0][5:7] +'_'+ df1['Dia'].iloc[0][8:10] + '_' +  df1['Hora'].iloc[0][:2] + '_' +  df1['Hora'].iloc[0][3:5]
-            caminho = './data/radar_sumare/'+ df1['Dia'].iloc[0][:4] +'/'+ df1['Dia'].iloc[0][5:7] +'/'+ df1['Dia'].iloc[0][8:10] +'/' + arquivo + '.png'
-        else:
-            arquivo = df1['DT_MEDICAO'].iloc[0][:4] +'_'+ df1['DT_MEDICAO'].iloc[0][5:7] +'_'+ df1['DT_MEDICAO'].iloc[0][8:10] + '_' + str(df1['HR_MEDICAO'].iloc[0]).zfill(4)[:2] + '_' +  str(df1['HR_MEDICAO'].iloc[0]).zfill(4)[2:4]
-            caminho = './data/radar_sumare/'+ df1['DT_MEDICAO'].iloc[0][:4] +'/'+ df1['DT_MEDICAO'].iloc[0][5:7] +'/'+ df1['DT_MEDICAO'].iloc[0][8:10] +'/'+arquivo+'.png'
-        if os.path.exists(caminho):
-            img = Image.open(caminho)
-            pos_sumare = (-22.955139,-43.248278)
-            pos_sumare_img = (img.height/2, img.width/2)
+class Weather_system:
+    """
+    Weather system handler used to load metadata and precipitation data
+    from multiple meteorological systems (CEMADEN, INMET, ALERTARIO, etc).
 
-            dify = (pos_sumare_img[0]/pos_sumare[0])
-            difx = (pos_sumare_img[1]/pos_sumare[1])
+    Attributes
+    ----------
+    system : str
+        Selected weather system identifier.
+    base_data_path : str
+        Base directory where raw data files are stored.
+    config_path : str
+        Directory containing CSV configuration files.
+    temp_resolution_system : dict
+        Mapping between systems and their default temporal resolution.
+    system_path : dict
+        Mapping between systems and the relative data folder.
+    """
 
-            posx = pos_sumare[1] - ((vlon - pos_sumare[1]) * 32.5)
-            valorx = posx * difx
-            posy = pos_sumare[0] + ((vlat - pos_sumare[0]) * 19.5)
-            valory = posy * dify
-            
-            rgb_im = img.convert('RGB')
-            r, g, b = rgb_im.getpixel((valorx, valory))
-            #print(r, g, b)
-            df.at[i,'reflect'] = interpolate_value((r, g, b),legend_colors,legend_values)
-        else:
-            arquivo = df1['Dia'].iloc[0][:4] +'_'+ df1['Dia'].iloc[0][5:7] +'_'+ df1['Dia'].iloc[0][8:10] + '_' +  df1['Hora'].iloc[0][:2] + '_' + str(int(df1['Hora'].iloc[0][3:5]) + 1).zfill(2)
-            caminho = './data/radar_sumare/'+ df1['Dia'].iloc[0][:4] +'/'+ df1['Dia'].iloc[0][5:7] +'/'+ df1['Dia'].iloc[0][8:10] +'/' + arquivo + '.png'
-            if os.path.exists(caminho):
-                img = Image.open(caminho)
-                pos_sumare = (-22.955139,-43.248278)
-                pos_sumare_img = (img.height/2, img.width/2 -1)
+    def __init__(self, system: str) -> None:
+        self.system = system
+        self.base_data_path = "./data/"
+        self.config_path = "./config/"
 
-                dify = (pos_sumare_img[0]/pos_sumare[0])
-                difx = (pos_sumare_img[1]/pos_sumare[1])
+        self.temp_resolution_system = {
+            'cemaden': "1h",
+            'inmet': "1h",
+            'sumare': "2min",
+            'alertario': "15min",
+            'sirenes': "15min"
+        }
 
-                posx = pos_sumare[1] - ((vlon - pos_sumare[1]) * 32.5)
-                valorx = posx * difx
-                posy = pos_sumare[0] + ((vlat - pos_sumare[0]) * 19.5)
-                valory = posy * dify
-                
-                rgb_im = img.convert('RGB')
-                r, g, b = rgb_im.getpixel((valorx, valory))
-                #print(r, g, b)
-                df.at[i,'reflect'] = interpolate_value((r, g, b),legend_colors,legend_values)
-        i = i + 1
-    #print(df['reflect'].unique())
-    df_correlacao = df[df['reflect'].notnull()]
+        self.system_path = {
+            'cemaden': "ws/cemaden/raw",
+            'inmet': "ws/inmet",
+            'sumare': "radar_sumare",
+            'alertario': "ws/alerta-from-source",
+            'sirenes': "web_sirenes_defesa_civil/data"
+        }
 
-    if station_name in STATION_NAMES_FOR_RJ:
-        if met:
-            df_correlacao.loc[df_correlacao.index.values,'Chuva'] = df_correlacao['Chuva'].fillna(0)
-            if df['reflect'].unique().size == 1  or df['reflect'].unique().size == 2 :
-                print('Não possui nenhum registro de reflectividade')
-            else:
-                print(stats.spearmanr(df_correlacao['Chuva'],df_correlacao['reflect']))
-                print(stats.pearsonr(df_correlacao['Chuva'],df_correlacao['reflect']))
-        else:
-            df_correlacao.loc[df_correlacao.index.values,'15 min'] = df_correlacao['15 min'].fillna(0)
-            if df['reflect'].unique().size == 1  or df['reflect'].unique().size == 2 :
-                print('Não possui nenhum registro de reflectividade')
-            else:
-                print(stats.spearmanr(df_correlacao['15 min'],df_correlacao['reflect']))
-                print(stats.pearsonr(df_correlacao['15 min'],df_correlacao['reflect']))
-    else:
-        df_correlacao.loc[df_correlacao.index.values,'CHUVA'] = df_correlacao['CHUVA'].fillna(0)
-        if df['reflect'].unique().size == 1  or df['reflect'].unique().size == 2 :
-            print('Não possui nenhum registro de reflectividade')
-        else:
-            print(stats.spearmanr(df_correlacao['CHUVA'],df_correlacao['reflect']))
-            print(stats.pearsonr(df_correlacao['CHUVA'],df_correlacao['reflect']))
+    def get_station_info(self, station_name: str) -> Tuple[str, float, float]:
+        """
+        Retrieve station metadata (ID, latitude, longitude) for the given system.
 
-    
+        Parameters
+        ----------
+        station_name : str
+            Human-readable station name as defined in the configuration file.
 
-legend_colors = [
-    (197,0,197),    # Magenta
-    (227,6,5),      # Red
-    (255,112,0),    # Orange
-    (195,230,0),    # Yellow
-    (4,85,4),       # Yellow
-    (19,122,19),    # Dark Green
-    (0,167,12),     # Light Green
-    (0,0,0)         # Black
-]
-legend_values = [50, 45, 40, 35, 30, 25, 20,0]
+        Returns
+        -------
+        tuple
+            (station_id, latitude, longitude)
 
-STATION_NAMES_FOR_RJ = ('alto_da_boa_vista','guaratiba',
-                        'iraja','jardim_botanico',
-                        'riocentro','santa_cruz',
-                        'sao_cristovao','vidigal',
-                        'urca','rocinha',
-                        'tijuca','santa_teresa',
-                        'copacabana','grajau',
-                        'ilha_do_governador',
-                        'penha','madureira',
-                        'bangu','piedade',
-                        'tanque','saude',
-                        'barrinha','cidade_de_deus',
-                        'grajau','grande_meier',
-                        'anchieta','grota_funda',
-                        'campo_grande','sepetiba',
-                        'av_brasil_mendanha','recreio',
-                        'laranjeiras','tijuca_muda')
+        Raises
+        ------
+        ValueError
+            If the station does not exist in the system's CSV file.
+        """
 
-for station in STATION_NAMES_FOR_RJ :
-    get_radar_data(station, False)
+        def get_id_lat_lon(df: pd.DataFrame, field: str, station_name: str) -> Tuple[str, float, float]:
+            match = df.loc[df[field] == station_name]
+            if match.empty:
+                raise ValueError(
+                    f"Estação '{station_name}' não encontrada no arquivo referente ao sistema {self.system}"
+                )
 
-#get_radar_data('tijuca_muda',False)
+            row = match.iloc[0]
+            if self.system == "cemaden":
+                return row["codestacao"], float(row["latitude"]), float(row["longitude"])
+            return (
+                row["STATION_ID"],
+                float(row["VL_LATITUDE"]),
+                float(row["VL_LONGITUDE"])
+            )
+
+        match self.system:
+            case "cemaden":
+                cemaden_info_stations = pd.read_csv(self.config_path + "cemaden_stations.csv")
+                return get_id_lat_lon(cemaden_info_stations, "nome", station_name)
+
+            case "inmet":
+                inmet_info_stations = pd.read_csv(self.config_path + "SurfaceStation.csv")
+                inmet_info_stations = inmet_info_stations[inmet_info_stations['SYSTEM'] == 'INMET']
+                return get_id_lat_lon(inmet_info_stations, "DC_NOME", station_name)
+
+            case "alertario":
+                alertario_info_stations = pd.read_csv(self.config_path + "SurfaceStation.csv")
+                alertario_info_stations = alertario_info_stations[alertario_info_stations['SYSTEM'] == 'ALERTARIO']
+                return get_id_lat_lon(alertario_info_stations, "DC_NOME", station_name)
+
+        raise ValueError(f"Unsupported system '{self.system}'")
+
+    def get_data(self, id_station: str) -> pd.DataFrame:
+        """
+        Dispatch to the correct data loader based on weather system.
+
+        Parameters
+        ----------
+        id_station : str
+            Station ID used to locate data.
+
+        Returns
+        -------
+        DataFrame
+            Raw weather observations indexed by datetime.
+        """
+        match self.system:
+            case 'cemaden':
+                return self.cemaden_station_data(id_station)
+            case 'inmet':
+                return self.inmet_station_data(id_station)
+            case 'alertario':
+                return self.alertario_station_data(id_station)
+
+        raise ValueError(f"Unsupported system '{self.system}'")
+
+    def cemaden_station_data(self, station_code: str) -> pd.DataFrame:
+        """
+        Load CEMADEN station data from a parquet file.
+
+        Parameters
+        ----------
+        station_code : str
+            ID of the CEMADEN station.
+
+        Returns
+        -------
+        DataFrame
+            CEMADEN time series with precipitation values.
+        """
+
+        station_code = str(station_code)
+        path = os.path.join(
+            self.base_data_path,
+            self.system_path.get(self.system),
+            f"{station_code}.parquet"
+        )
+
+        print(f"Reading: {path}")
+        cemaden_data_station = pd.read_parquet(path)
+        cemaden_data_station["datahora"] = pd.to_datetime(
+            cemaden_data_station["datahora"], errors="coerce", dayfirst=True
+        )
+        return cemaden_data_station
+
+    def inmet_station_data(self, id_station: str) -> pd.DataFrame:
+        """
+        Placeholder for INMET data loader.
+        """
+        return pd.DataFrame()
+
+    def alertario_station_data(self, id_station: str) -> pd.DataFrame:
+        """
+        Placeholder for ALERTARIO data loader.
+        """
+        return pd.DataFrame()
+
+
+def compare_series(correlation_df: pd.DataFrame, system_label: str,
+                   radar_label: str, station_name: str) -> None:
+        """
+        Plot two time series (precipitation vs reflectivity) on separate y-axes.
+
+        Saves the figure as PNG.
+
+        Parameters
+        ----------
+        correlation_df : DataFrame
+            Merged system and radar dataframe.
+        system_label : str
+            Label for weather system.
+        radar_label : str
+            Label for radar data.
+        station_name : str
+            Station name for file naming.
+        """
+        fig, ax1 = plt.subplots(figsize=(10, 5))
+
+        ax1.plot(correlation_df['datahora'], correlation_df['chuva'],
+                 color='black', label=system_label, linewidth=2)
+        ax1.set_xlabel("tempo")
+        ax1.set_ylabel("Intensidade de Chuva")
+
+        ax2 = ax1.twinx()
+        ax2.plot(correlation_df['datahora'], correlation_df['reflect'],
+                 color='tab:red', label=radar_label, linewidth=2, linestyle='--')
+        ax2.set_ylabel("Refletividade")
+
+        lines_1, labels_1 = ax1.get_legend_handles_labels()
+        lines_2, labels_2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper right")
+
+        plt.title("Comportamento de chuva de refletividade com o tempo")
+        plt.tight_layout()
+
+        path = "./data/time_series/"
+        os.makedirs(path, exist_ok=True)
+        plt.savefig(path + f"{system_label}_{station_name}.png",
+                    dpi=300, bbox_inches="tight")
+
+        print(f"Time series Graph saved at {path}")
+
+
+def correlation_graph(data: pd.DataFrame, x: str, y: str,
+                      station_name: str, system: str) -> None:
+    """
+    Create and save a scatter plot of two numeric variables.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Input dataset.
+    x : str
+        X-axis column name.
+    y : str
+        Y-axis column name.
+    station_name : str
+        Weather station name.
+    system : str
+        Weather system name.
+    """
+    path = "./data/correlation_graphs/"
+    sns.scatterplot(x=x, y=y, data=data)
+    plt.title(f"Correlação chuva-refletividade ( {system} - {station_name})")
+    os.makedirs(path, exist_ok=True)
+    plt.savefig(path + f"{system}_{station_name}.png",
+                dpi=300, bbox_inches="tight")
+    print(f"Correlation Graph saved at {path}")
+
+
+def save_correlation_coefficients(system: str, station: str,
+                                  spearman_stat: float, spearman_pvalue: float,
+                                  pearson_stat: float, pearson_pvalue: float) -> None:
+    """
+    Append a line to a CSV file containing correlation metrics.
+
+    Parameters
+    ----------
+    system : str
+        Weather system.
+    station : str
+        Station name.
+    spearman_stat : float
+        Spearman correlation coefficient.
+    spearman_pvalue : float
+        Statistical p-value.
+    pearson_stat : float
+        Pearson correlation coefficient.
+    pearson_pvalue : float
+        Statistical p-value.
+    """
+    file_name = f"./data/correlacoes_{system}.csv"
+    path = Path(file_name)
+
+    header = [
+        "data", "sistema", "estacao",
+        "spearman_statistic", "spearman_pvalue",
+        "pearson_statistic", "pearson_pvalue"
+    ]
+
+    new_line = [
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        system, station,
+        spearman_stat, spearman_pvalue,
+        pearson_stat, pearson_pvalue
+    ]
+
+    file_exists = path.exists()
+
+    with path.open(mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(header)
+        writer.writerow(new_line)
+
+    print(f"Linha salva em {path.resolve()}")
+
+
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse CLI arguments for the correlation script.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed arguments (`start`, `end`, `system`, `station`).
+    """
+    parser = argparse.ArgumentParser(
+        description="Provides the correlation between radar and weather system data."
+    )
+
+    parser.add_argument("--start", required=True, type=str,
+                        help="Start date (format: YYYY-MM-DD)")
+    parser.add_argument("--end", required=True, type=str,
+                        help="End date (format: YYYY-MM-DD)")
+
+    parser.add_argument("--system", required=True, type=str, default="cemaden",
+                        help="Weather system used for correlation")
+    parser.add_argument("--station", required=True, type=str,
+                        help="Station name in the selected system")
+
+    return parser.parse_args()
+
+
+def main(args: argparse.Namespace) -> None:
+    """
+    Main application workflow:
+    - Load station metadata
+    - Load weather system data
+    - Load radar data
+    - Merge and compute correlations
+    - Generate plots and save metrics
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed CLI arguments.
+    """
+    print("--------------------------------------------------------------------------------------")
+    weather_system = Weather_system(args.system)
+    id_station, latitude, longitude = weather_system.get_station_info(args.station)
+    print(f"weather system: {args.system}")
+    print(f"station id: {id_station} lat: {latitude} lon: {longitude}")
+
+    print(f"getting data from: {args.system}, station {args.station}...")
+    system_data = weather_system.get_data(id_station)
+
+    print(f"getting data from Radar Sumaré...")
+    radar_system = RadarSumare("./data/radar_sumare")
+    radar_data = radar_system.get_radar_data(
+        args.start,
+        args.end,
+        weather_system.temp_resolution_system.get(args.system),
+        latitude,
+        longitude
+    )
+
+    # Merge system and radar data
+    correlation_df = pd.merge(system_data, radar_data, on="datahora", how="inner")
+    correlation_df = correlation_df.dropna(
+        subset=["datahora", "reflect", "intensidade_precipitacao"]
+    )
+
+    correlation_graph(correlation_df, "chuva", "reflect", args.station, args.system)
+
+    spearman_stat, spearman_pval = stats.spearmanr(
+        correlation_df['chuva'], correlation_df['reflect']
+    )
+    pearson_stat, pearson_pval = stats.pearsonr(
+        correlation_df['chuva'], correlation_df['reflect']
+    )
+
+    print(f"correlation coefficients: Spearman - {spearman_stat} | Pearson - {pearson_stat}")
+
+    save_correlation_coefficients(
+        args.system, args.station,
+        spearman_stat, spearman_pval,
+        pearson_stat, pearson_pval
+    )
+
+    compare_series(correlation_df, args.system, "Radar_Sumaré", args.station)
+
+    print("End of processing.")
+    print("--------------------------------------------------------------------------------------")
+
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    main(args)
