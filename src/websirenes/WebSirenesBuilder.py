@@ -82,14 +82,12 @@ class WebSirenesBuilder:
             df = self.merge_by_name(self.websirenes_coords, df)
             key = self._create_key(df)
             self._write_dataset_key(df, key)
-            log.info(
-                f"""
+            log.info(f"""
                 Station name: {station_name}
                 Station key: {key}
                 Initial operation date: {df.index.min()}
                 Last operation date: {df.index.max()}
-            """
-            )
+            """)
 
 
 class WebSireneCoordsSchema(pa.DataFrameModel):

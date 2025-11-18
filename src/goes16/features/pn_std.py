@@ -1,8 +1,7 @@
-import logging
 import os
-
 import netCDF4 as nc
 import numpy as np
+import logging
 from scipy.ndimage import generic_filter
 
 logger = logging.getLogger(__name__)
@@ -14,10 +13,7 @@ if not logger.handlers:
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-
-def textura_local_profundidade(
-    pasta_pn: str, pasta_saida: str, tamanho_janela: int = 3
-):
+def textura_local_profundidade(pasta_pn: str, pasta_saida: str, tamanho_janela: int = 3):
     """
     Calcula o desvio padrão local (textura) da profundidade da nuvem (PN).
 
@@ -32,7 +28,7 @@ def textura_local_profundidade(
         return
 
     prefix = arquivos[0].split("_", 1)[0]
-    prefix_feature = "PNstd"
+    prefix_feature = 'PNstd'
     arquivos_timestamp = [f.split("_", 1)[1] for f in arquivos if "_" in f]
     os.makedirs(pasta_saida, exist_ok=True)
 
@@ -47,30 +43,19 @@ def textura_local_profundidade(
             continue
 
         try:
-            with (
-                nc.Dataset(path_entrada, "r") as src,
-                nc.Dataset(path_saida, "w") as dst,
-            ):
+            with nc.Dataset(path_entrada, 'r') as src, nc.Dataset(path_saida, 'w') as dst:
                 for nome_dim, dim in src.dimensions.items():
-                    dst.createDimension(
-                        nome_dim, len(dim) if not dim.isunlimited() else None
-                    )
+                    dst.createDimension(nome_dim, len(dim) if not dim.isunlimited() else None)
                 vars_salvas = 0
                 for nome_var in src.variables:
                     dados = src.variables[nome_var][:]
-                    std_local = generic_filter(
-                        dados, np.std, size=tamanho_janela, mode="nearest"
-                    )
-                    var_out = dst.createVariable(
-                        nome_var, "f4", src.variables[nome_var].dimensions
-                    )
+                    std_local = generic_filter(dados, np.std, size=tamanho_janela, mode='nearest')
+                    var_out = dst.createVariable(nome_var, 'f4', src.variables[nome_var].dimensions)
                     var_out[:] = std_local
-                    var_out.description = "Desvio padrão espacial local (textura) da profundidade da nuvem"
+                    var_out.description = 'Desvio padrão espacial local (textura) da profundidade da nuvem'
                     vars_salvas += 1
                 if vars_salvas == 0:
-                    logger.warning(
-                        f"Nenhuma variável de textura gerada para {timestamp}"
-                    )
-                dst.description = "Textura espacial (desvio padrão local) da feature PN"
-        except Exception:
+                    logger.warning(f"Nenhuma variável de textura gerada para {timestamp}")
+                dst.description = 'Textura espacial (desvio padrão local) da feature PN'
+        except Exception as e:
             logger.exception(f"Erro ao processar {timestamp}")

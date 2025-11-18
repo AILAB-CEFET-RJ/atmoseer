@@ -1,10 +1,8 @@
-import numpy as np
 import torch
-
-from train.base_classifier import BaseClassifier
-from train.training_utils import DeviceDataLoader
+import numpy as np
 from utils import rainfall as rp
-
+from train.training_utils import DeviceDataLoader
+from train.base_classifier import BaseClassifier
 
 class BinaryClassifier(BaseClassifier):
     def __init__(self, learner):
@@ -12,7 +10,7 @@ class BinaryClassifier(BaseClassifier):
         self.learner = learner
 
     def evaluate(self, test_loader):
-        print("Evaluating binary classifier...")
+        print('Evaluating binary classifier...')
         self.learner.eval()
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -24,10 +22,10 @@ class BinaryClassifier(BaseClassifier):
                 yb_pred = self.learner(xb_test.float())
 
                 yb_pred = yb_pred.detach().cpu().numpy()
-                yb_pred = yb_pred.reshape(-1, 1)
+                yb_pred = yb_pred.reshape(-1,1)
 
                 yb_test = yb_test.detach().cpu().numpy()
-                yb_test = yb_test.reshape(-1, 1)
+                yb_test = yb_test.reshape(-1,1)
 
                 if y_pred is None:
                     y_pred = yb_pred
