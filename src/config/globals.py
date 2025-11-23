@@ -94,55 +94,6 @@ WEBSIRENE_STATION_IDS = (
     "81", "82", "83" 
 )
 
-# hyper_params_dict_bc = {
-#     "N_EPOCHS" : 3500,
-#     "PATIENCE" : 1000,
-#     "BATCH_SIZE" : 1024,
-#     "WEIGHT_DECAY" : 0,
-#     "LEARNING_RATE" : 0.0003,
-#     "DROPOUT_RATE" : 0.5,
-#     "SLIDING_WINDOW_SIZE" : 6
-# }
-
-# hyper_params_dict_oc = {
-#     "N_EPOCHS" : 6000,
-#     "PATIENCE" : 1000,
-#     "BATCH_SIZE" : 1024,
-#     "WEIGHT_DECAY" : 0,
-#     "LEARNING_RATE" : 3e-6,
-#     "DROPOUT_RATE" : 0.5,
-#     "SLIDING_WINDOW_SIZE" : 6
-# }
-
-
-# Observed variables for INMET weather stations:
-# ,DC_NOME,
-# PRE_INS,
-# TEM_SEN,
-# VL_LATITUDE,
-# PRE_MAX,UF,
-# RAD_GLO,
-# PTO_INS,
-# TEM_MIN,
-# VL_LONGITUDE,
-# UMD_MIN,
-# PTO_MAX,
-# VEN_DIR,
-# DT_MEDICAO,
-# CHUVA,
-# PRE_MIN,
-# UMD_MAX,
-# VEN_VEL,
-# PTO_MIN,
-# TEM_MAX,
-# TEN_BAT,
-# VEN_RAJ,
-# TEM_CPU,
-# TEM_INS,
-# UMD_INS,
-# CD_ESTACAO,
-# HR_MEDICAO
-
 # lower left corner
 lat_min, lon_min = (-23.801876626302175, -45.05290312102409)
 
