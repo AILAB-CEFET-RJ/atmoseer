@@ -20,6 +20,8 @@ import folium
 import pandas as pd
 from branca.colormap import LinearColormap, linear
 from folium.plugins import TimestampedGeoJson
+# PYTHONPATH is typically set to "src", so we import config directly.
+from config.globals import extent
 
 # Mapping from accumulation field to pandas frequency and ISO8601 period
 FIELD_FREQ = {
@@ -191,7 +193,7 @@ def build_features(df: pd.DataFrame, field: str, colormap, freq: str) -> list[di
                         "fillOpacity": 0.85,
                         "stroke": True,
                         "color": hex_color,
-                        "radius": 7,
+                        "radius": 2.1,  # ~30% of original size
                     },
                 },
             }
@@ -213,7 +215,7 @@ def create_map(
     lat_min, lon_min, lat_max, lon_max = bbox
     center_lat = (lat_min + lat_max) / 2
     center_lon = (lon_min + lon_max) / 2
-    fmap = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start, tiles=tiles)
+    fmap = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start - 1 if zoom_start > 1 else zoom_start, tiles=tiles)
     duration_js = "undefined"
     if duration_ms is not None and duration_ms > 0:
         seconds = max(1, round(duration_ms / 1000))
@@ -261,9 +263,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--end-date", required=True, help="End date/time (DD/MM/YYYY HH:MM)")
     parser.add_argument(
         "--bbox",
-        required=True,
         nargs="+",
-        help="Bounding box as lat_min,lon_min,lat_max,lon_max (e.g., '-23.0,-44.5,-22.0,-42.5' or '-23.0 -44.5 -22.0 -42.5')",
+        help="Bounding box as lat_min,lon_min,lat_max,lon_max (e.g., '-23.0,-44.5,-22.0,-42.5' or '-23.0 -44.5 -22.0 -42.5'). Defaults to extent in src/config/globals.py when omitted.",
     )
     parser.add_argument(
         "--accum-field",
@@ -312,11 +313,16 @@ def main():
     if end_dt < start_dt:
         print("End date/time must be greater than or equal to the start date/time.")
         sys.exit(1)
-    try:
-        bbox = parse_bbox(args.bbox)
-    except ValueError as err:
-        print(f"Invalid bbox: {err}")
-        sys.exit(1)
+    if args.bbox:
+        try:
+            bbox = parse_bbox(args.bbox)
+        except ValueError as err:
+            print(f"Invalid bbox: {err}")
+            sys.exit(1)
+    else:
+        # extent is [lon_min, lat_min, lon_max, lat_max]
+        lon_min_ext, lat_min_ext, lon_max_ext, lat_max_ext = extent
+        bbox = (lat_min_ext, lon_min_ext, lat_max_ext, lon_max_ext)
 
     freq, period = FIELD_FREQ[args.accum_field]
     data_dir = Path(args.data_dir)

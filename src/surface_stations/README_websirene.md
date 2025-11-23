@@ -34,11 +34,11 @@ Extracts a single station series over a time window and writes Parquet or CSV.
 Example:
 ```bash
 PYTHONPATH=src python3 src/surface_stations/export_station_series.py \
-  --station-id 15 \
+  --station-id 1 \
   --start-date "01/01/2019 00:00" \
   --end-date "31/12/2019 23:59" \
-  --format parquet \
-  --output data/ws/export/station_15_20190101_20191231.parquet
+  --format csv \
+  --output data/ws/export/station_15_20190101_20191231.csv
 ```
 Key flags:
 - `--station-id` (required)
