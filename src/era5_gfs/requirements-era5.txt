@@ -1,0 +1,22 @@
+# Ambiente SO do download do ERA5 (src/era5_gfs/).
+# O treino continua no env `atmoseer`. Zarr 3 exige Python >= 3.11.
+#
+#   conda create -n era5 python=3.12 -y
+#   conda activate era5
+#   pip install -r src/era5_gfs/requirements-era5.txt
+#
+# Versoes com que o pipeline foi testado em 2026-10-05.
+xarray==2026.9.0
+zarr==3.4.0
+dask==2026.8.0
+numpy
+pandas
+fsspec
+aiohttp
+requests
+netCDF4
+cdsapi
+pytest
+
+# GFS (src/era5_gfs/baixar_gfs.py)
+herbie-data

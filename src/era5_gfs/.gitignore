@@ -1,0 +1,8 @@
+era5-bruto/
+era5-estatico/
+era5-*-conv/
+gfs-bruto/
+*.part
+.env
+*.env
+.cdsapirc
